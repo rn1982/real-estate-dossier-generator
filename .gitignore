@@ -37,6 +37,7 @@ coverage/
 *.log
 *.tmp
 *.temp
+logs/
 
 # OS files
 Thumbs.db
