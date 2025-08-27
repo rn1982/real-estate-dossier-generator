@@ -1,5 +1,4 @@
 import formidable from 'formidable';
-import { promises as fs } from 'fs';
 
 export const config = {
   api: {

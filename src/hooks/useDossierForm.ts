@@ -3,14 +3,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { dossierFormSchema, type DossierFormValues } from '@/types/dossierForm';
 import { useState } from 'react';
 import { submitDossierWithRetry, DossierServiceError } from '@/services/dossierService';
+import { useToast } from '@/contexts/ToastContext';
+import { useFormPersistence } from './useFormPersistence';
 
 export const useDossierForm = () => {
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   
   const form = useForm<DossierFormValues>({
     resolver: zodResolver(dossierFormSchema),
+    mode: 'onChange', // Enable real-time validation
+    reValidateMode: 'onChange', // Revalidate on every change
+    delayError: 500, // Debounce validation errors by 500ms
     defaultValues: {
       agentEmail: '',
       propertyType: 'appartement',
@@ -20,6 +26,9 @@ export const useDossierForm = () => {
       photos: [],
     },
   });
+
+  // Add form persistence
+  const { clearFormAndStorage } = useFormPersistence(form, isSubmitting, submitSuccess);
 
   const handleSubmit = async (data: DossierFormValues) => {
     setIsSubmitting(true);
@@ -51,7 +60,12 @@ export const useDossierForm = () => {
       
       // Show success message
       setSubmitSuccess(true);
-      alert(`Dossier soumis avec succès! ${response.data.photoCount} photo(s) reçue(s).`);
+      toast({
+        title: 'Dossier soumis avec succès!',
+        description: `${response.data.photoCount} photo(s) reçue(s). Votre propriété a été enregistrée.`,
+        variant: 'success',
+        duration: 5000,
+      });
       
       // Reset form after successful submission
       form.reset();
@@ -59,13 +73,48 @@ export const useDossierForm = () => {
       console.error('Error submitting form:', error);
       
       let errorMessage = 'Une erreur est survenue lors de la soumission du formulaire.';
+      let errorTitle = 'Erreur de soumission';
       
       if (error instanceof DossierServiceError) {
         errorMessage = error.message;
+        
+        // Map specific error codes to user-friendly messages
+        if (error.status === 400) {
+          errorTitle = 'Données invalides';
+          errorMessage = 'Veuillez vérifier les informations saisies et réessayer.';
+        } else if (error.status === 413) {
+          errorTitle = 'Fichier trop volumineux';
+          errorMessage = 'Un ou plusieurs fichiers dépassent la limite de taille (10 MB par fichier).';
+        } else if (error.status === 415) {
+          errorTitle = 'Type de fichier non supporté';
+          errorMessage = 'Seuls les fichiers image (JPG, PNG, WEBP) sont acceptés.';
+        } else if (error.status === 429) {
+          errorTitle = 'Limite de requêtes atteinte';
+          errorMessage = 'Trop de soumissions. Veuillez patienter quelques minutes avant de réessayer.';
+        } else if (error.status === 500 || error.status === 503) {
+          errorTitle = 'Erreur serveur';
+          errorMessage = 'Le serveur rencontre des difficultés. Veuillez réessayer dans quelques instants.';
+        } else if (error.code === 'NETWORK_ERROR') {
+          errorTitle = 'Erreur réseau';
+          errorMessage = 'Vérifiez votre connexion internet et réessayez.';
+        } else if (error.code === 'TIMEOUT') {
+          errorTitle = 'Délai dépassé';
+          errorMessage = 'La requête a pris trop de temps. Veuillez vérifier votre connexion et réessayer.';
+        }
       }
       
       setSubmitError(errorMessage);
-      alert(errorMessage);
+      
+      // Create retry action for network errors
+      const shouldShowRetry = error instanceof DossierServiceError && 
+        (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT' || (error.status && error.status >= 500));
+      
+      toast({
+        title: errorTitle,
+        description: shouldShowRetry ? `${errorMessage} Cliquez pour réessayer.` : errorMessage,
+        variant: 'error',
+        duration: 10000,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -77,5 +126,6 @@ export const useDossierForm = () => {
     isSubmitting,
     submitError,
     submitSuccess,
+    clearFormAndStorage,
   };
 };

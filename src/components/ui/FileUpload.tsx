@@ -9,6 +9,7 @@ export interface FileUploadProps {
   maxFiles?: number;
   accept?: DropzoneOptions['accept'];
   className?: string;
+  disabled?: boolean;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -22,20 +23,26 @@ const FileUpload: React.FC<FileUploadProps> = ({
     'image/webp': ['.webp'],
   },
   className,
+  disabled = false,
 }) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept,
     maxFiles,
     maxSize: 10 * 1024 * 1024, // 10MB
+    disabled,
     onDrop: (acceptedFiles) => {
-      onFilesChange([...value, ...acceptedFiles].slice(0, maxFiles));
+      if (!disabled) {
+        onFilesChange([...value, ...acceptedFiles].slice(0, maxFiles));
+      }
     },
   });
 
   const removeFile = (index: number) => {
-    const newFiles = [...value];
-    newFiles.splice(index, 1);
-    onFilesChange(newFiles);
+    if (!disabled) {
+      const newFiles = [...value];
+      newFiles.splice(index, 1);
+      onFilesChange(newFiles);
+    }
   };
 
   return (
@@ -45,7 +52,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
         className={cn(
           'border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors',
           isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-gray-400',
-          error && 'border-red-500'
+          error && 'border-red-500',
+          disabled && 'opacity-50 cursor-not-allowed'
         )}
       >
         <input {...getInputProps()} />
@@ -86,7 +94,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 <button
                   type="button"
                   onClick={() => removeFile(index)}
-                  className="ml-2 text-red-500 hover:text-red-700"
+                  className="ml-2 text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={disabled}
                 >
                   Supprimer
                 </button>

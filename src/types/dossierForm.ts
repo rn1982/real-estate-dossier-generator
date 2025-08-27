@@ -46,6 +46,14 @@ export const dossierFormSchema = z.object({
   // Section 4: Media
   photos: z.array(z.instanceof(File))
     .max(20, 'Maximum 20 photos')
+    .refine(
+      (files) => files.every((file) => file.size <= 10 * 1024 * 1024),
+      'Chaque fichier doit faire moins de 10 MB'
+    )
+    .refine(
+      (files) => files.every((file) => file.type.startsWith('image/')),
+      'Seuls les fichiers image sont acceptés'
+    )
     .optional(),
 });
 

@@ -257,7 +257,7 @@ describe('dossierService', () => {
     });
 
     it('should use exponential backoff for retries', async () => {
-      let attemptTimestamps: number[] = [];
+      const attemptTimestamps: number[] = [];
       
       server.use(
         http.post('http://localhost:3000/api/dossier', () => {

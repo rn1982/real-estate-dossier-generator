@@ -6,11 +6,12 @@ import { Select } from '@/components/ui/Select';
 import { Label } from '@/components/ui/Label';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { Button } from '@/components/ui/Button';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useDossierForm } from '@/hooks/useDossierForm';
 import { propertyTypeOptions, targetBuyerOptions } from '@/types/dossierForm';
 
 export const DossierForm: React.FC = () => {
-  const { form, handleSubmit, isSubmitting } = useDossierForm();
+  const { form, handleSubmit, isSubmitting, clearFormAndStorage } = useDossierForm();
   const {
     register,
     control,
@@ -43,6 +44,7 @@ export const DossierForm: React.FC = () => {
                 type="email"
                 placeholder="agent@example.com"
                 error={errors.agentEmail?.message}
+                disabled={isSubmitting}
                 {...register('agentEmail')}
               />
             </div>
@@ -71,6 +73,7 @@ export const DossierForm: React.FC = () => {
                     id="propertyType"
                     options={propertyTypeOptions}
                     error={errors.propertyType?.message}
+                    disabled={isSubmitting}
                     {...field}
                   />
                 )}
@@ -86,6 +89,7 @@ export const DossierForm: React.FC = () => {
                 type="text"
                 placeholder="123 Rue Example, Genève"
                 error={errors.address?.message}
+                disabled={isSubmitting}
                 {...register('address')}
               />
             </div>
@@ -99,6 +103,7 @@ export const DossierForm: React.FC = () => {
                 type="text"
                 placeholder="500000"
                 error={errors.price?.message}
+                disabled={isSubmitting}
                 {...register('price')}
               />
             </div>
@@ -118,6 +123,7 @@ export const DossierForm: React.FC = () => {
                     step="0.5"
                     min="0"
                     error={errors.roomCount?.message}
+                    disabled={isSubmitting}
                     onChange={(e) => onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                     value={value ?? ''}
                     {...field}
@@ -140,6 +146,7 @@ export const DossierForm: React.FC = () => {
                     placeholder="85"
                     min="0"
                     error={errors.livingArea?.message}
+                    disabled={isSubmitting}
                     onChange={(e) => onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                     value={value ?? ''}
                     {...field}
@@ -163,6 +170,7 @@ export const DossierForm: React.FC = () => {
                     min="1800"
                     max={new Date().getFullYear()}
                     error={errors.constructionYear?.message}
+                    disabled={isSubmitting}
                     onChange={(e) => onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                     value={value ?? ''}
                     {...field}
@@ -181,6 +189,7 @@ export const DossierForm: React.FC = () => {
                 placeholder="• Vue imprenable sur le lac&#10;• Proche des transports publics&#10;• Récemment rénové"
                 rows={4}
                 maxLength={500}
+                disabled={isSubmitting}
                 {...register('keyPoints')}
               />
               {errors.keyPoints && (
@@ -198,6 +207,7 @@ export const DossierForm: React.FC = () => {
                 placeholder="Description détaillée de la propriété..."
                 rows={6}
                 maxLength={2000}
+                disabled={isSubmitting}
                 {...register('propertyDescription')}
               />
               {errors.propertyDescription && (
@@ -229,6 +239,7 @@ export const DossierForm: React.FC = () => {
                     id="targetBuyer"
                     options={targetBuyerOptions}
                     error={errors.targetBuyer?.message}
+                    disabled={isSubmitting}
                     {...field}
                   />
                 )}
@@ -260,6 +271,7 @@ export const DossierForm: React.FC = () => {
                     value={value}
                     error={errors.photos?.message}
                     maxFiles={20}
+                    disabled={isSubmitting}
                   />
                 )}
               />
@@ -267,15 +279,32 @@ export const DossierForm: React.FC = () => {
           </div>
         </FormSection>
 
-        {/* Submit Button */}
-        <div className="flex justify-center pt-6">
+        {/* Submit and Clear Buttons */}
+        <div className="flex justify-center gap-4 pt-6">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            disabled={isSubmitting}
+            onClick={clearFormAndStorage}
+            className="min-w-[150px]"
+          >
+            Effacer le formulaire
+          </Button>
           <Button
             type="submit"
             size="lg"
             disabled={isSubmitting}
-            className="min-w-[200px]"
+            className="min-w-[200px] relative"
           >
-            {isSubmitting ? 'Envoi en cours...' : 'Soumettre'}
+            {isSubmitting ? (
+              <>
+                <LoadingSpinner size="sm" className="mr-2" />
+                Envoi en cours...
+              </>
+            ) : (
+              'Soumettre'
+            )}
           </Button>
         </div>
       </form>

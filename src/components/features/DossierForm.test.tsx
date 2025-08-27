@@ -1,14 +1,43 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DossierForm } from './DossierForm';
+import { ToastContextProvider } from '@/contexts/ToastContext';
+import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
 
-// Mock alert
-global.alert = vi.fn();
+// Setup MSW server
+const server = setupServer(
+  http.post('/api/dossier', () => {
+    return HttpResponse.json({
+      message: 'Dossier created successfully',
+      data: { photoCount: 0 },
+    }, { status: 201 });
+  })
+);
 
-describe('DossierForm Component', () => {
+beforeEach(() => {
+  server.listen();
+  localStorage.clear();
+  vi.clearAllMocks();
+});
+
+afterEach(() => {
+  server.resetHandlers();
+});
+
+// Helper function to render with providers
+const renderWithProviders = (component: React.ReactElement) => {
+  return render(
+    <ToastContextProvider>
+      {component}
+    </ToastContextProvider>
+  );
+};
+
+describe('DossierForm Integration Tests', () => {
   it('renders all form sections', () => {
-    render(<DossierForm />);
+    renderWithProviders(<DossierForm />);
     
     expect(screen.getByText('Formulaire de Soumission de Propriété')).toBeInTheDocument();
     expect(screen.getByText('1. Informations de l\'Agent')).toBeInTheDocument();
@@ -53,84 +82,130 @@ describe('DossierForm Component', () => {
     });
   });
 
-  it('accepts valid email format', async () => {
+  it('successfully submits form with all required fields', async () => {
     const user = userEvent.setup();
-    render(<DossierForm />);
+    renderWithProviders(<DossierForm />);
     
-    const emailInput = screen.getByLabelText('Adresse e-mail de l\'agent*') as HTMLInputElement;
-    await user.type(emailInput, 'agent@example.com');
+    // Fill required fields
+    await user.type(screen.getByLabelText(/Adresse e-mail de l'agent/), 'agent@example.com');
+    await user.type(screen.getByLabelText(/^Adresse\*/), '123 Rue Example, Genève');
+    await user.type(screen.getByLabelText(/Prix \(CHF\)/), '500000');
     
-    expect(emailInput.value).toBe('agent@example.com');
+    // Submit form
+    const submitButton = screen.getByRole('button', { name: /Soumettre/ });
+    await user.click(submitButton);
+    
+    // Check loading state
+    expect(screen.getByText(/Envoi en cours.../)).toBeInTheDocument();
+    
+    // Wait for success message
+    await waitFor(() => {
+      expect(screen.getByText(/Dossier soumis avec succès!/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows validation errors for missing required fields', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<DossierForm />);
+    
+    // Try to submit without filling required fields
+    const submitButton = screen.getByRole('button', { name: /Soumettre/ });
+    await user.click(submitButton);
+    
+    // Check for validation errors
+    await waitFor(() => {
+      expect(screen.getByText(/Adresse e-mail requise/)).toBeInTheDocument();
+      expect(screen.getByText(/Adresse requise/)).toBeInTheDocument();
+      expect(screen.getByText(/Prix requis/)).toBeInTheDocument();
+    });
+  });
+
+  it('validates email format', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<DossierForm />);
+    
+    const emailInput = screen.getByLabelText(/Adresse e-mail de l'agent/);
+    await user.type(emailInput, 'invalid-email');
+    await user.tab(); // Trigger validation
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Adresse e-mail invalide/)).toBeInTheDocument();
+    });
   });
 
   it('validates price format', async () => {
     const user = userEvent.setup();
-    render(<DossierForm />);
+    renderWithProviders(<DossierForm />);
     
-    const priceInput = screen.getByLabelText('Prix (CHF)*') as HTMLInputElement;
+    const priceInput = screen.getByLabelText(/Prix \(CHF\)/);
     await user.type(priceInput, 'abc123');
-    
-    const submitButton = screen.getByRole('button', { name: /Soumettre/i });
-    await user.click(submitButton);
+    await user.tab(); // Trigger validation
     
     await waitFor(() => {
-      expect(screen.getByText('Format de prix invalide')).toBeInTheDocument();
+      expect(screen.getByText(/Format de prix invalide/)).toBeInTheDocument();
     });
   });
 
-  it('submits form with valid data', async () => {
-    const user = userEvent.setup();
-    const consoleSpy = vi.spyOn(console, 'log');
+  it('handles network error with retry option', async () => {
+    server.use(
+      http.post('/api/dossier', () => {
+        return new Response(null, { status: 500 });
+      })
+    );
     
-    render(<DossierForm />);
+    const user = userEvent.setup();
+    renderWithProviders(<DossierForm />);
     
     // Fill required fields
-    const emailInput = screen.getByLabelText('Adresse e-mail de l\'agent*') as HTMLInputElement;
-    await user.type(emailInput, 'agent@example.com');
+    await user.type(screen.getByLabelText(/Adresse e-mail de l'agent/), 'agent@example.com');
+    await user.type(screen.getByLabelText(/^Adresse\*/), '123 Rue Example');
+    await user.type(screen.getByLabelText(/Prix \(CHF\)/), '500000');
     
-    const addressInput = screen.getByLabelText('Adresse*') as HTMLInputElement;
-    await user.type(addressInput, '123 Rue Example, Genève');
-    
-    const priceInput = screen.getByLabelText('Prix (CHF)*') as HTMLInputElement;
-    await user.type(priceInput, '500000');
-    
-    const submitButton = screen.getByRole('button', { name: /Soumettre/i });
+    // Submit form
+    const submitButton = screen.getByRole('button', { name: /Soumettre/ });
     await user.click(submitButton);
     
+    // Wait for error message with retry button
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Form submitted with data:'),
-        expect.any(Object)
-      );
-      expect(global.alert).toHaveBeenCalledWith('Formulaire soumis avec succès!');
+      expect(screen.getByText(/Erreur serveur/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Réessayer/ })).toBeInTheDocument();
     });
-    
-    consoleSpy.mockRestore();
   });
 
-  it('disables submit button while submitting', async () => {
+  it('disables all inputs during submission', async () => {
     const user = userEvent.setup();
-    render(<DossierForm />);
+    renderWithProviders(<DossierForm />);
     
     // Fill required fields
-    const emailInput = screen.getByLabelText('Adresse e-mail de l\'agent*') as HTMLInputElement;
-    await user.type(emailInput, 'agent@example.com');
+    await user.type(screen.getByLabelText(/Adresse e-mail de l'agent/), 'agent@example.com');
+    await user.type(screen.getByLabelText(/^Adresse\*/), '123 Rue Example');
+    await user.type(screen.getByLabelText(/Prix \(CHF\)/), '500000');
     
-    const addressInput = screen.getByLabelText('Adresse*') as HTMLInputElement;
-    await user.type(addressInput, '123 Rue Example');
-    
-    const priceInput = screen.getByLabelText('Prix (CHF)*') as HTMLInputElement;
-    await user.type(priceInput, '500000');
-    
-    const submitButton = screen.getByRole('button', { name: /Soumettre/i });
+    // Submit form
+    const submitButton = screen.getByRole('button', { name: /Soumettre/ });
     await user.click(submitButton);
     
-    // Check if button text changes during submission
-    await waitFor(() => {
-      const submittingButton = screen.queryByRole('button', { name: /Envoi en cours.../i });
-      if (submittingButton) {
-        expect(submittingButton).toBeDisabled();
-      }
-    });
+    // Check that inputs are disabled
+    expect(screen.getByLabelText(/Adresse e-mail de l'agent/)).toBeDisabled();
+    expect(screen.getByLabelText(/^Adresse\*/)).toBeDisabled();
+    expect(screen.getByLabelText(/Prix \(CHF\)/)).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Effacer le formulaire/ })).toBeDisabled();
+  });
+
+  it('clears form and storage when clicking clear button', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<DossierForm />);
+    
+    // Fill some fields
+    await user.type(screen.getByLabelText(/Adresse e-mail de l'agent/), 'agent@example.com');
+    await user.type(screen.getByLabelText(/^Adresse\*/), '123 Rue Example');
+    
+    // Click clear button
+    const clearButton = screen.getByRole('button', { name: /Effacer le formulaire/ });
+    await user.click(clearButton);
+    
+    // Check that fields are cleared
+    expect(screen.getByLabelText(/Adresse e-mail de l'agent/)).toHaveValue('');
+    expect(screen.getByLabelText(/^Adresse\*/)).toHaveValue('');
   });
 });
