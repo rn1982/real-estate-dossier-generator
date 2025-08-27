@@ -2,9 +2,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { dossierFormSchema, type DossierFormValues } from '@/types/dossierForm';
 import { useState } from 'react';
+import { submitDossierWithRetry, DossierServiceError } from '@/services/dossierService';
 
 export const useDossierForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   
   const form = useForm<DossierFormValues>({
     resolver: zodResolver(dossierFormSchema),
@@ -20,12 +23,11 @@ export const useDossierForm = () => {
 
   const handleSubmit = async (data: DossierFormValues) => {
     setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(false);
     
     try {
-      // For now, just log the data and prepare for API integration (Story 1.3)
-      console.log('Form submitted with data:', data);
-      
-      // Convert to FormData for future API integration
+      // Convert to FormData for API
       const formData = new FormData();
       
       // Add text fields
@@ -42,16 +44,28 @@ export const useDossierForm = () => {
         });
       }
       
-      console.log('FormData prepared for API:', formData);
+      // Submit to API with retry logic
+      const response = await submitDossierWithRetry(formData);
+      
+      console.log('Dossier submitted successfully:', response);
       
       // Show success message
-      alert('Formulaire soumis avec succès!');
+      setSubmitSuccess(true);
+      alert(`Dossier soumis avec succès! ${response.data.photoCount} photo(s) reçue(s).`);
       
       // Reset form after successful submission
       form.reset();
     } catch (error) {
       console.error('Error submitting form:', error);
-      alert('Une erreur est survenue lors de la soumission du formulaire.');
+      
+      let errorMessage = 'Une erreur est survenue lors de la soumission du formulaire.';
+      
+      if (error instanceof DossierServiceError) {
+        errorMessage = error.message;
+      }
+      
+      setSubmitError(errorMessage);
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -61,5 +75,7 @@ export const useDossierForm = () => {
     form,
     handleSubmit,
     isSubmitting,
+    submitError,
+    submitSuccess,
   };
 };
