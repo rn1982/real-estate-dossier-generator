@@ -37,7 +37,8 @@ export class DossierServiceError extends Error {
 }
 
 export const submitDossier = async (formData: FormData): Promise<DossierPostResponse> => {
-  const apiUrl = import.meta.env.VITE_API_URL;
+  // Use environment variable or default to /api/dossier for Vercel deployment
+  const apiUrl = import.meta.env.VITE_API_URL || '/api/dossier';
   
   if (!apiUrl) {
     console.error("VITE_API_URL is not defined.");
@@ -45,7 +46,7 @@ export const submitDossier = async (formData: FormData): Promise<DossierPostResp
   }
   
   try {
-    const response = await fetch(`${apiUrl}/dossier`, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       body: formData,
     });
