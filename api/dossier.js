@@ -7,6 +7,7 @@ export const config = {
 };
 
 export default async function handler(req, res) {
+  console.log('Dossier API called with method:', req.method);
   // Set CORS headers with origin validation
   res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -143,6 +144,8 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Error processing dossier submission:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', JSON.stringify(error, null, 2));
 
     // Handle specific formidable errors
     if (error.code === 'LIMIT_FILE_SIZE') {
@@ -158,7 +161,10 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Generic error response
-    res.status(500).json({ error: 'Internal server error' });
+    // Generic error response with more details in development
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? `Internal server error: ${error.message}`
+      : 'Internal server error';
+    res.status(500).json({ error: errorMessage });
   }
 }
