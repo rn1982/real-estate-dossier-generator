@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useDossierForm } from './useDossierForm';
-import { submitDossierWithRetry, DossierServiceError } from '@/services/dossierService';
+import { submitDossierWithRetry, DossierServiceError, type DossierPostResponse } from '@/services/dossierService';
 
 // Mock the service
 vi.mock('@/services/dossierService', () => ({
@@ -56,9 +56,17 @@ describe('useDossierForm', () => {
   });
 
   it('should handle successful form submission', async () => {
-    const mockResponse = {
-      data: { photoCount: 3 },
-      status: 201,
+    const mockResponse: DossierPostResponse = {
+      message: 'Success',
+      timestamp: new Date().toISOString(),
+      data: { 
+        agentEmail: 'test@example.com',
+        propertyType: 'appartement',
+        address: '123 Test Street',
+        price: '500000',
+        targetBuyer: 'jeune_famille',
+        photoCount: 3 
+      },
     };
     
     vi.mocked(submitDossierWithRetry).mockResolvedValue(mockResponse);
@@ -105,7 +113,7 @@ describe('useDossierForm', () => {
   });
 
   it('should handle API error 400 - Bad Request', async () => {
-    const error = new DossierServiceError('Bad request', 400);
+    const error = new DossierServiceError('Bad request', 400, undefined);
     vi.mocked(submitDossierWithRetry).mockRejectedValue(error);
     
     const { result } = renderHook(() => useDossierForm(), );
@@ -131,7 +139,7 @@ describe('useDossierForm', () => {
   });
 
   it('should handle API error 413 - File Too Large', async () => {
-    const error = new DossierServiceError('File too large', 413);
+    const error = new DossierServiceError('File too large', 413, undefined);
     vi.mocked(submitDossierWithRetry).mockRejectedValue(error);
     
     const { result } = renderHook(() => useDossierForm(), );
@@ -155,7 +163,7 @@ describe('useDossierForm', () => {
   });
 
   it('should handle network error', async () => {
-    const error = new DossierServiceError('Network error', undefined, 'NETWORK_ERROR');
+    const error = new DossierServiceError('Network error', 0, 'NETWORK_ERROR');
     vi.mocked(submitDossierWithRetry).mockRejectedValue(error);
     
     const { result } = renderHook(() => useDossierForm(), );
@@ -179,7 +187,7 @@ describe('useDossierForm', () => {
   });
 
   it('should handle timeout error', async () => {
-    const error = new DossierServiceError('Timeout', undefined, 'TIMEOUT');
+    const error = new DossierServiceError('Timeout', 0, 'TIMEOUT');
     vi.mocked(submitDossierWithRetry).mockRejectedValue(error);
     
     const { result } = renderHook(() => useDossierForm(), );
@@ -203,9 +211,17 @@ describe('useDossierForm', () => {
   });
 
   it('should reset form after successful submission', async () => {
-    const mockResponse = {
-      data: { photoCount: 0 },
-      status: 201,
+    const mockResponse: DossierPostResponse = {
+      message: 'Success',
+      timestamp: new Date().toISOString(),
+      data: { 
+        agentEmail: 'test@example.com',
+        propertyType: 'appartement',
+        address: '123 Test Street',
+        price: '500000',
+        targetBuyer: 'jeune_famille',
+        photoCount: 0 
+      },
     };
     
     vi.mocked(submitDossierWithRetry).mockResolvedValue(mockResponse);
@@ -231,13 +247,8 @@ describe('useDossierForm', () => {
   });
 
   it('should set isSubmitting to true during submission', async () => {
-    const mockResponse = {
-      data: { photoCount: 0 },
-      status: 201,
-    };
-    
-    let resolvePromise: any;
-    const promise = new Promise((resolve) => {
+    let resolvePromise: (value: DossierPostResponse) => void;
+    const promise = new Promise<DossierPostResponse>((resolve) => {
       resolvePromise = resolve;
     });
     
@@ -264,7 +275,18 @@ describe('useDossierForm', () => {
     
     // Resolve the promise
     await act(async () => {
-      resolvePromise(mockResponse);
+      resolvePromise({
+        message: 'Success',
+        timestamp: new Date().toISOString(),
+        data: { 
+          agentEmail: 'test@example.com',
+          propertyType: 'appartement',
+          address: '123 Test Street',
+          price: '500000',
+          targetBuyer: 'jeune_famille',
+          photoCount: 0 
+        }
+      });
       await promise;
     });
     
@@ -306,9 +328,17 @@ describe('useDossierForm', () => {
   });
 
   it('should handle FormData construction correctly', async () => {
-    const mockResponse = {
-      data: { photoCount: 2 },
-      status: 201,
+    const mockResponse: DossierPostResponse = {
+      message: 'Success',
+      timestamp: new Date().toISOString(),
+      data: { 
+        agentEmail: 'test@example.com',
+        propertyType: 'appartement',
+        address: '123 Test Street',
+        price: '500000',
+        targetBuyer: 'jeune_famille',
+        photoCount: 2 
+      },
     };
     
     vi.mocked(submitDossierWithRetry).mockResolvedValue(mockResponse);

@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import { UseFormReturn } from 'react-hook-form';
+import type { UseFormReturn, Path } from 'react-hook-form';
 
 const STORAGE_KEY = 'dossier_form_draft';
 const STORAGE_EXPIRY_KEY = 'dossier_form_draft_expiry';
@@ -76,7 +76,8 @@ export const useFormPersistence = <T extends Record<string, unknown>>(
         // Restore each field individually
         Object.keys(data).forEach((key) => {
           if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
-            setValue(key as keyof T, data[key] as T[keyof T]);
+            // @ts-expect-error - Path type issue with generic T
+            setValue(key as Path<T>, data[key]);
           }
         });
         

@@ -27,7 +27,8 @@ export interface DossierErrorResponse {
 export class DossierServiceError extends Error {
   constructor(
     message: string,
-    public status: number,
+    public status?: number,
+    public code?: string,
     public details?: DossierErrorResponse
   ) {
     super(message);
@@ -75,7 +76,7 @@ export const submitDossier = async (formData: FormData): Promise<DossierPostResp
           errorMessage = `Server error: ${errorMessage}`;
       }
       
-      throw new DossierServiceError(errorMessage, response.status, errorData);
+      throw new DossierServiceError(errorMessage, response.status, undefined, errorData);
     }
     
     return data as DossierPostResponse;
@@ -84,7 +85,8 @@ export const submitDossier = async (formData: FormData): Promise<DossierPostResp
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new DossierServiceError(
         'Network error. Please check your connection and try again.',
-        0
+        0,
+        'NETWORK_ERROR'
       );
     }
     
@@ -96,7 +98,8 @@ export const submitDossier = async (formData: FormData): Promise<DossierPostResp
     // Handle unexpected errors
     throw new DossierServiceError(
       'An unexpected error occurred. Please try again.',
-      500
+      500,
+      undefined
     );
   }
 };
@@ -116,7 +119,7 @@ export const submitDossierWithRetry = async (
       lastError = error as Error;
       
       // Don't retry on client errors (4xx)
-      if (error instanceof DossierServiceError && error.status >= 400 && error.status < 500) {
+      if (error instanceof DossierServiceError && error.status && error.status >= 400 && error.status < 500) {
         throw error;
       }
       
@@ -128,5 +131,5 @@ export const submitDossierWithRetry = async (
     }
   }
   
-  throw lastError || new DossierServiceError('Failed after maximum retries', 500);
+  throw lastError || new DossierServiceError('Failed after maximum retries', 500, undefined);
 };
