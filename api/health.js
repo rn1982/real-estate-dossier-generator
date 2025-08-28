@@ -1,4 +1,6 @@
-export default function handler(req, res) {
+import { withSentry } from './sentryConfig.js';
+
+async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
@@ -19,3 +21,5 @@ export default function handler(req, res) {
     version: '0.1.0',
   })
 }
+
+export default withSentry(handler);

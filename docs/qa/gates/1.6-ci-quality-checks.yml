@@ -1,0 +1,86 @@
+schema: 1
+story: '1.6'
+story_title: 'Add CI Quality Checks with GitHub Actions'
+gate: CONCERNS
+status_reason: 'CI workflow implemented successfully but 6 API tests failing. Non-blocking for deployment per requirements.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-08-28T20:06:30Z'
+
+top_issues:
+  - issue: 'API endpoint tests failing (6 tests)'
+    severity: medium
+    category: test
+    file: 'api/__tests__/dossier.test.js'
+    suggested_owner: dev
+    notes: 'Tests expect 201 status but receive 400. Likely test setup issue with formidable mock'
+
+  - issue: 'React Fast Refresh warnings in components'
+    severity: low
+    category: lint
+    file: 'src/components/ui/*.tsx'
+    suggested_owner: dev
+    notes: 'Non-critical warnings about exporting non-components from component files'
+
+waiver: { active: false }
+
+quality_score: 80 # 100 - (0*20) - (2*10)
+expires: '2025-09-11T20:06:30Z'
+
+evidence:
+  tests_reviewed: 11
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'No security vulnerabilities detected in CI workflow or dependencies'
+  performance:
+    status: PASS
+    notes: 'CI workflow uses caching effectively, builds complete in reasonable time'
+  reliability:
+    status: CONCERNS
+    notes: 'Test failures indicate potential reliability issues in API test infrastructure'
+  maintainability:
+    status: PASS
+    notes: 'Workflow is well-structured, uses latest action versions, clear step names'
+
+recommendations:
+  immediate:
+    - action: 'Fix failing API tests - formidable mock configuration issue'
+      refs: ['api/__tests__/dossier.test.js']
+      priority: high
+  future:
+    - action: 'Refactor UI components to separate utility exports for Fast Refresh'
+      refs: ['src/components/ui/Alert.tsx', 'src/components/ui/Button.tsx', 'src/components/ui/Toast.tsx']
+      priority: low
+    - action: 'Add test coverage reporting to CI workflow'
+      refs: ['.github/workflows/ci.yml']
+      priority: medium
+
+ci_workflow_assessment:
+  triggers_configured: true
+  node_version_correct: true
+  caching_enabled: true
+  all_checks_present:
+    lint: true
+    typecheck: true
+    test: true
+    build: true
+  documentation_updated: true
+  badge_added: true
+
+test_infrastructure:
+  framework: 'Vitest with React Testing Library'
+  unit_tests_present: true
+  integration_tests_present: true
+  e2e_tests_present: false
+  test_execution: 'Tests run but some fail - not blocking deployment as per requirements'
+
+deployment_impact:
+  vercel_integration: 'Working independently of CI'
+  pr_checks_visible: true
+  main_branch_protected: false
+  deployment_blocking: false

@@ -1,5 +1,7 @@
 # Real Estate Dossier Generator
 
+[![CI](https://github.com/rn1982/real-estate-dossier-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/rn1982/real-estate-dossier-generator/actions/workflows/ci.yml)
+
 A professional property documentation system built with React, TypeScript, and Vite. This application provides a modern interface for generating comprehensive real estate dossiers with photo uploads, property details, and professional formatting.
 
 ## Prerequisites
@@ -125,6 +127,68 @@ git --version   # Should output git version x.x.x
 - **React Testing Library** (15.0.x) - Component testing
 - **ESLint** (8.57.x) - Code linting
 - **Prettier** (3.2.x) - Code formatting
+
+## Continuous Integration
+
+### GitHub Actions CI Workflow
+
+This project uses GitHub Actions for automated quality checks on every code change.
+
+#### CI Pipeline
+
+The CI workflow automatically runs on:
+- Every push to the `main` branch
+- Every pull request targeting the `main` branch
+
+#### Quality Checks
+
+The following checks are executed in the CI pipeline:
+
+| Check | Command | Description |
+|-------|---------|-------------|
+| **Linting** | `npm run lint` | Checks code quality with ESLint |
+| **Type Checking** | `npm run typecheck` | Validates TypeScript types |
+| **Testing** | `npm test` | Runs the test suite with Vitest |
+| **Build** | `npm run build` | Verifies production build succeeds |
+
+#### CI Status
+
+- Check the [Actions tab](https://github.com/rn1982/real-estate-dossier-generator/actions) to monitor CI runs
+- PR status checks appear automatically in the pull request interface
+- Failed checks are shown as warnings (non-blocking) to maintain deployment velocity
+
+#### Troubleshooting CI Failures
+
+**Linting Failures**:
+```bash
+# Run locally to see detailed errors
+npm run lint
+# Auto-fix possible issues
+npm run lint -- --fix
+```
+
+**Type Checking Failures**:
+```bash
+# Run locally for detailed type errors
+npm run typecheck
+# Check specific files
+npx tsc --noEmit src/path/to/file.ts
+```
+
+**Test Failures**:
+```bash
+# Run tests locally with details
+npm test
+# Run specific test file
+npm test -- path/to/test.spec.ts
+```
+
+**Build Failures**:
+```bash
+# Run build locally
+npm run build
+# Check for import errors or missing dependencies
+```
 
 ## Deployment
 

@@ -1,6 +1,48 @@
 import formidable from 'formidable';
 import os from 'os';
 import path from 'path';
+import { sendConfirmationEmail, validateEmail } from './emailService.js';
+import { withSentry, Sentry } from './sentryConfig.js';
+
+// Simple in-memory rate limiter (resets on server restart)
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in ms
+const MAX_REQUESTS_PER_WINDOW = 10; // 10 submissions per hour per IP
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const userRecord = rateLimitMap.get(ip);
+  
+  if (!userRecord) {
+    rateLimitMap.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  
+  // Check if window has expired
+  if (now - userRecord.windowStart > RATE_LIMIT_WINDOW) {
+    rateLimitMap.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  
+  // Check if limit exceeded
+  if (userRecord.count >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
+  }
+  
+  // Increment counter
+  userRecord.count++;
+  return true;
+}
+
+// Clean up old entries periodically (every hour)
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of rateLimitMap.entries()) {
+    if (now - record.windowStart > RATE_LIMIT_WINDOW) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}, RATE_LIMIT_WINDOW);
 
 export const config = {
   api: {
@@ -8,7 +50,7 @@ export const config = {
   },
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   console.log('Dossier API called with method:', req.method);
   // Set CORS headers with origin validation
   res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || '*');
@@ -25,6 +67,16 @@ export default async function handler(req, res) {
   // Only accept POST requests
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Méthode non autorisée' });
+    return;
+  }
+
+  // Check rate limit
+  const clientIp = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || 'unknown';
+  if (!checkRateLimit(clientIp)) {
+    res.status(429).json({ 
+      error: 'Trop de demandes. Veuillez réessayer plus tard.',
+      retryAfter: 3600 // seconds
+    });
     return;
   }
 
@@ -148,6 +200,15 @@ export default async function handler(req, res) {
       }
     }
 
+    // Validate email format
+    if (!validateEmail(formData.agentEmail)) {
+      res.status(400).json({ 
+        error: 'Format d\'email invalide',
+        email: formData.agentEmail
+      });
+      return;
+    }
+
     // Log only in development
     if (process.env.NODE_ENV === 'development') {
       console.log('Received dossier submission:', {
@@ -155,6 +216,17 @@ export default async function handler(req, res) {
         formData,
         photoCount: photoMetadata.length,
       });
+    }
+
+    // Send confirmation email
+    const emailResult = await sendConfirmationEmail(formData, photoMetadata.length);
+    
+    if (!emailResult.success) {
+      // Log email error but don't fail the request
+      console.error('Failed to send confirmation email:', emailResult.error);
+      // Continue with the response even if email fails
+    } else {
+      console.log('Confirmation email sent successfully to:', formData.agentEmail);
     }
 
     // Return success response
@@ -165,6 +237,7 @@ export default async function handler(req, res) {
         ...formData,
         photoCount: photoMetadata.length,
       },
+      emailSent: emailResult.success,
     });
 
   } catch (error) {
@@ -180,6 +253,16 @@ export default async function handler(req, res) {
     };
     
     console.error('[API Error] Dossier endpoint:', errorContext);
+    
+    // Capture error in Sentry with context
+    if (Sentry) {
+      Sentry.captureException(error, {
+        extra: {
+          endpoint: 'dossier',
+          ...errorContext
+        }
+      });
+    }
 
     // Handle specific formidable errors
     if (error.code === 'LIMIT_FILE_SIZE') {
@@ -202,3 +285,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: errorMessage });
   }
 }
+
+export default withSentry(handler);

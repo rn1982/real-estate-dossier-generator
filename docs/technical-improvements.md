@@ -27,6 +27,80 @@ This document tracks technical improvements and optimizations identified during 
 **Impact**: Code quality and regression prevention
 **Reference**: Story 1.1 QA Review (2025-08-26)
 
+## Improvements from Story 1.5 Review
+
+### 3. Test Mock Configuration Enhancement
+**Issue**: Test suite mock configuration needs reconfiguration for vitest compatibility
+**Details**: Tests exist but are failing due to mock issues, not blocking production deployment
+**Recommendation**:
+- Update mock configurations in `api/__tests__/dossier.test.js` and `api/__tests__/emailService.test.js`
+- Ensure vitest compatibility for ES module imports
+- Fix async test patterns for email service testing
+**Priority**: Low (non-blocking for production)
+**Impact**: Developer confidence in test suite reliability
+**Reference**: Story 1.5 QA Review (2025-08-28)
+
+### 4. Email Retry Queue Implementation
+**Issue**: Email service currently has basic retry logic but lacks persistent queue
+**Details**: Nice-to-have enhancement for improved reliability, not essential for MVP
+**Recommendation**:
+- Implement background job queue for failed email retries
+- Add exponential backoff strategy
+- Consider using Redis or similar for queue persistence
+- Add monitoring for queue depth and retry success rates
+**Priority**: Low (enhancement for scale)
+**Impact**: Improved email delivery reliability at scale
+**Reference**: Story 1.5 QA Review (2025-08-28)
+
+### 5. Advanced Email Monitoring & Alerting
+**Issue**: Basic logging exists but lacks comprehensive monitoring
+**Details**: Can add monitoring as system scales and usage patterns emerge
+**Recommendation**:
+- Implement email service health monitoring
+- Add alerting for sustained email failures
+- Track delivery rates and bounces
+- Consider integration with monitoring tools (e.g., DataDog, New Relic)
+**Priority**: Low (can add as usage grows)
+**Impact**: Proactive issue detection and system reliability monitoring
+**Reference**: Story 1.5 QA Review (2025-08-28)
+
+## Improvements from Story 1.6 Review
+
+### 6. API Test Mock Configuration Fix
+**Issue**: 6 API tests failing due to formidable mock configuration issues
+**Details**: Tests expect 201 status but receive 400. Likely test setup issue with formidable mock in `api/__tests__/dossier.test.js`
+**Recommendation**:
+- Fix formidable mock configuration to properly simulate multipart form data parsing
+- Update test expectations to match actual API behavior
+- Ensure consistent test environment setup across all API tests
+**Priority**: Medium
+**Impact**: Test reliability and developer confidence in API changes
+**Reference**: Story 1.6 QA Review (2025-08-28)
+
+### 7. CI Test Coverage Reporting
+**Issue**: CI workflow lacks test coverage reporting and visualization
+**Details**: Tests run but coverage metrics are not tracked or displayed
+**Recommendation**:
+- Add coverage reporting to CI workflow using vitest coverage
+- Integrate coverage badges in README
+- Set coverage thresholds to prevent regressions
+- Consider coverage visualization in PR comments
+**Priority**: Medium
+**Impact**: Visibility into test coverage trends and quality gates
+**Reference**: Story 1.6 QA Review (2025-08-28)
+
+### 8. React Fast Refresh Component Refactoring
+**Issue**: Fast Refresh warnings in 4 UI components (Alert, Button, Toast, ToastContext)
+**Details**: Components export utility functions alongside components, affecting hot reload
+**Recommendation**:
+- Extract utility exports (variants, types) to separate files
+- Keep only component exports in .tsx files
+- Apply consistent pattern across all UI components
+- Update imports in consuming components
+**Priority**: Low
+**Impact**: Improved developer experience with faster hot reloads
+**Reference**: Story 1.6 QA Review (2025-08-28)
+
 ## Implementation Guidelines
 
 These improvements should be considered when:

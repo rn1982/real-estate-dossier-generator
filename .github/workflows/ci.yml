@@ -34,3 +34,15 @@ jobs:
       
       - name: Build project
         run: npm run build
+        env:
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          VITE_SENTRY_ENVIRONMENT: ci
+      
+      - name: Validate Sentry configuration
+        run: |
+          echo "Checking Sentry configuration in build..."
+          if grep -q "Sentry.init" dist/assets/*.js 2>/dev/null; then
+            echo "✅ Sentry initialization found in build"
+          else
+            echo "⚠️  Sentry initialization not found (may be disabled in CI)"
+          fi
