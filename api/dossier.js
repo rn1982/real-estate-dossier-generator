@@ -52,7 +52,8 @@ export const config = {
 async function handler(req, res) {
   console.log('Dossier API called with method:', req.method);
   // Set CORS headers with origin validation
-  res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || '*');
+  // Set CORS headers - allow all origins for now since it's a public API
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
