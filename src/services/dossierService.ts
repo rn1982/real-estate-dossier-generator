@@ -37,14 +37,12 @@ export class DossierServiceError extends Error {
 }
 
 export const submitDossier = async (formData: FormData): Promise<DossierPostResponse> => {
-  // Temporarily use simple endpoint to test if formidable is the issue
-  // TODO: Change back to /api/dossier once fixed
+  // Use environment variable if set, otherwise use the simple endpoint
+  // Simple endpoint works in production, full endpoint has formidable issues
   const apiUrl = import.meta.env.VITE_API_URL || '/api/dossier-simple';
   
-  if (!apiUrl) {
-    console.error("VITE_API_URL is not defined.");
-    throw new DossierServiceError("Application is not configured correctly.", 500);
-  }
+  // Log the URL being used for debugging
+  console.log('API URL being used:', apiUrl);
   
   try {
     const response = await fetch(apiUrl, {
