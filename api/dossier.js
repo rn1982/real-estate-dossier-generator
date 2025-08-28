@@ -1,4 +1,6 @@
 import formidable from 'formidable';
+import os from 'os';
+import path from 'path';
 
 export const config = {
   api: {
@@ -27,11 +29,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Parse multipart form data
+    // Configure formidable with proper temp directory for Vercel
     const form = formidable({
       multiples: true,
       maxFiles: 20,
       maxFileSize: 10 * 1024 * 1024, // 10MB per file
+      uploadDir: path.join(os.tmpdir(), 'uploads'), // Use OS temp directory
+      keepExtensions: true,
+      allowEmptyFiles: false,
       filter: function ({ mimetype }) {
         // Accept only image formats
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -39,14 +44,28 @@ export default async function handler(req, res) {
       },
     });
 
-    const [fields, files] = await form.parse(req);
+    // Parse the form with better error handling
+    let fields, files;
+    try {
+      [fields, files] = await form.parse(req);
+    } catch (parseError) {
+      console.error('Form parsing error:', parseError);
+      if (parseError.httpCode) {
+        res.status(parseError.httpCode).json({ error: parseError.message });
+      } else {
+        res.status(400).json({ error: 'Failed to parse form data' });
+      }
+      return;
+    }
 
     // Extract and validate required fields
     const requiredFields = ['agentEmail', 'propertyType', 'address', 'price', 'targetBuyer'];
     const missingFields = [];
 
     for (const field of requiredFields) {
-      if (!fields[field] || !fields[field][0]) {
+      // Check if field exists and has value (formidable v3 returns arrays)
+      const fieldValue = fields[field];
+      if (!fieldValue || (Array.isArray(fieldValue) && !fieldValue[0])) {
         missingFields.push(field);
       }
     }
@@ -59,18 +78,23 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Extract form data
+    // Extract form data with safe array access
+    const getValue = (field) => {
+      const value = fields[field];
+      return Array.isArray(value) ? value[0] : value;
+    };
+
     const formData = {
-      agentEmail: fields.agentEmail[0],
-      propertyType: fields.propertyType[0],
-      address: fields.address[0],
-      price: fields.price[0],
-      targetBuyer: fields.targetBuyer[0],
-      roomCount: fields.roomCount ? fields.roomCount[0] : null,
-      livingArea: fields.livingArea ? fields.livingArea[0] : null,
-      constructionYear: fields.constructionYear ? fields.constructionYear[0] : null,
-      keyPoints: fields.keyPoints ? fields.keyPoints[0] : null,
-      propertyDescription: fields.propertyDescription ? fields.propertyDescription[0] : null,
+      agentEmail: getValue('agentEmail'),
+      propertyType: getValue('propertyType'),
+      address: getValue('address'),
+      price: getValue('price'),
+      targetBuyer: getValue('targetBuyer'),
+      roomCount: getValue('roomCount') || null,
+      livingArea: getValue('livingArea') || null,
+      constructionYear: getValue('constructionYear') || null,
+      keyPoints: getValue('keyPoints') || null,
+      propertyDescription: getValue('propertyDescription') || null,
     };
 
     // Validate property type enum
@@ -124,13 +148,14 @@ export default async function handler(req, res) {
       }
     }
 
-    // Log received data for verification
-    console.log('Received dossier submission:', {
-      timestamp: new Date().toISOString(),
-      formData,
-      photoCount: photoMetadata.length,
-      photos: photoMetadata,
-    });
+    // Log only in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Received dossier submission:', {
+        timestamp: new Date().toISOString(),
+        formData,
+        photoCount: photoMetadata.length,
+      });
+    }
 
     // Return success response
     res.status(201).json({
@@ -143,9 +168,18 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Error processing dossier submission:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Error details:', JSON.stringify(error, null, 2));
+    // Enhanced error logging with context
+    const errorContext = {
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      url: req.url,
+      headers: req.headers,
+      errorMessage: error.message,
+      errorCode: error.code,
+      errorStack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    };
+    
+    console.error('[API Error] Dossier endpoint:', errorContext);
 
     // Handle specific formidable errors
     if (error.code === 'LIMIT_FILE_SIZE') {

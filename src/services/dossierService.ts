@@ -37,12 +37,9 @@ export class DossierServiceError extends Error {
 }
 
 export const submitDossier = async (formData: FormData): Promise<DossierPostResponse> => {
-  // Use environment variable if set, otherwise use the simple endpoint
-  // Simple endpoint works in production, full endpoint has formidable issues
-  const apiUrl = import.meta.env.VITE_API_URL || '/api/dossier-simple';
-  
-  // Log the URL being used for debugging
-  console.log('API URL being used:', apiUrl);
+  // Use environment variable if set, otherwise use the default endpoint
+  // Now that formidable is fixed, we can use the full endpoint
+  const apiUrl = import.meta.env.VITE_API_URL || '/api/dossier';
   
   try {
     const response = await fetch(apiUrl, {
