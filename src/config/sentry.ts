@@ -1,6 +1,8 @@
 import * as Sentry from '@sentry/react'
 import { env } from './env'
 
+let isInitialized = false
+
 export const initSentry = () => {
   if (!env.VITE_SENTRY_DSN) {
     console.log('Sentry DSN not configured, skipping initialization')
@@ -34,9 +36,24 @@ export const initSentry = () => {
       return event
     },
   })
+  
+  isInitialized = true
 }
 
-export const captureException = Sentry.captureException
-export const captureMessage = Sentry.captureMessage
+// Safe wrappers that only call Sentry if initialized
+export const captureException = (...args: Parameters<typeof Sentry.captureException>) => {
+  if (isInitialized) {
+    return Sentry.captureException(...args)
+  }
+  console.error('Sentry not initialized, error not captured:', args[0])
+}
+
+export const captureMessage = (...args: Parameters<typeof Sentry.captureMessage>) => {
+  if (isInitialized) {
+    return Sentry.captureMessage(...args)
+  }
+  console.log('Sentry not initialized, message not captured:', args[0])
+}
+
 export const withProfiler = Sentry.withProfiler
 export const ErrorBoundary = Sentry.ErrorBoundary

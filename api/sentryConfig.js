@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/node';
 
+// Track initialization state
 let isInitialized = false;
 
 function initSentry() {
@@ -47,28 +48,40 @@ function initSentry() {
 
 function withSentry(handler) {
   return async (req, res) => {
-    initSentry();
-    
     try {
-      // Add request context to Sentry
-      Sentry.configureScope((scope) => {
-        scope.setContext('request', {
-          method: req.method,
-          url: req.url,
-          headers: {
-            'user-agent': req.headers['user-agent'],
-            'content-type': req.headers['content-type'],
-          },
+      initSentry();
+      
+      // Add request context to Sentry only if initialized
+      if (isInitialized) {
+        Sentry.configureScope((scope) => {
+          scope.setContext('request', {
+            method: req.method,
+            url: req.url,
+            headers: {
+              'user-agent': req.headers['user-agent'],
+              'content-type': req.headers['content-type'],
+            },
+          });
         });
-      });
+      }
       
       return await handler(req, res);
     } catch (error) {
-      // Capture the error in Sentry
-      Sentry.captureException(error);
+      // Capture the error in Sentry only if initialized
+      if (isInitialized) {
+        Sentry.captureException(error);
+      }
       
-      // Re-throw to let the API handler deal with the response
-      throw error;
+      // Log error for debugging
+      console.error('API Error:', error.message || error);
+      
+      // Send error response if not already sent
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: 'Internal Server Error',
+          message: process.env.NODE_ENV === 'development' ? error.message : 'An error occurred processing your request'
+        });
+      }
     }
   };
 }
