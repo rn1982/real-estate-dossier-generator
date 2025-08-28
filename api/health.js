@@ -1,5 +1,5 @@
-// Health check endpoint - no Sentry wrapper needed for simple health checks
-export default async function handler(req, res) {
+// Health check endpoint - simplified for Vercel
+module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
