@@ -1,6 +1,5 @@
-import { withSentry } from './sentryConfig.js';
-
-async function handler(req, res) {
+// Health check endpoint - no Sentry wrapper needed for simple health checks
+export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
@@ -21,5 +20,3 @@ async function handler(req, res) {
     version: '0.1.0',
   })
 }
-
-export default withSentry(handler);
