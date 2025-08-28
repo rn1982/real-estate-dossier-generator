@@ -2,7 +2,6 @@ import formidable from 'formidable';
 import os from 'os';
 import path from 'path';
 import { sendConfirmationEmail, validateEmail } from './emailService.js';
-import { withSentry, Sentry } from './sentryConfig.js';
 
 // Simple in-memory rate limiter (resets on server restart)
 const rateLimitMap = new Map();
@@ -254,15 +253,7 @@ async function handler(req, res) {
     
     console.error('[API Error] Dossier endpoint:', errorContext);
     
-    // Capture error in Sentry with context
-    if (Sentry) {
-      Sentry.captureException(error, {
-        extra: {
-          endpoint: 'dossier',
-          ...errorContext
-        }
-      });
-    }
+    // Error logging (Sentry removed for production compatibility)
 
     // Handle specific formidable errors
     if (error.code === 'LIMIT_FILE_SIZE') {
@@ -286,4 +277,4 @@ async function handler(req, res) {
   }
 }
 
-export default withSentry(handler);
+export default handler;
