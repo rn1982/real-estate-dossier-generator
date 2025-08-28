@@ -53,24 +53,24 @@ export const submitDossier = async (formData: FormData): Promise<DossierPostResp
       const errorData = data as DossierErrorResponse;
       let errorMessage = errorData.error || 'API request failed';
       
-      // Provide more specific error messages based on status
+      // Provide more specific error messages based on status (keeping original French messages from API)
       switch (response.status) {
         case 400:
           if (errorData.missingFields) {
-            errorMessage = `Missing required fields: ${errorData.missingFields.join(', ')}`;
+            errorMessage = `Champs obligatoires manquants: ${errorData.missingFields.join(', ')}`;
           }
           break;
         case 413:
-          errorMessage = 'File(s) too large. Maximum size is 10MB per file, 20 files total.';
+          errorMessage = errorData.error || 'La taille du fichier dépasse le maximum autorisé (10 Mo par fichier, 20 fichiers au total).';
           break;
         case 415:
-          errorMessage = `Invalid file type: ${errorData.file}. Only JPEG, PNG, and WebP images are allowed.`;
+          errorMessage = errorData.error || `Type de fichier non supporté: ${errorData.file}. Seules les images JPEG, PNG et WebP sont autorisées.`;
           break;
         case 429:
-          errorMessage = 'Too many requests. Please try again later.';
+          errorMessage = 'Trop de requêtes. Veuillez réessayer plus tard.';
           break;
         default:
-          errorMessage = `Server error: ${errorMessage}`;
+          errorMessage = errorData.error || `Erreur serveur: ${errorMessage}`;
       }
       
       throw new DossierServiceError(errorMessage, response.status, undefined, errorData);
@@ -81,7 +81,7 @@ export const submitDossier = async (formData: FormData): Promise<DossierPostResp
     // Handle network errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new DossierServiceError(
-        'Network error. Please check your connection and try again.',
+        'Erreur réseau. Veuillez vérifier votre connexion et réessayer.',
         0,
         'NETWORK_ERROR'
       );
@@ -94,7 +94,7 @@ export const submitDossier = async (formData: FormData): Promise<DossierPostResp
     
     // Handle unexpected errors
     throw new DossierServiceError(
-      'An unexpected error occurred. Please try again.',
+      'Une erreur inattendue s\'est produite. Veuillez réessayer.',
       500,
       undefined
     );
@@ -128,5 +128,5 @@ export const submitDossierWithRetry = async (
     }
   }
   
-  throw lastError || new DossierServiceError('Failed after maximum retries', 500, undefined);
+  throw lastError || new DossierServiceError('Échec après le nombre maximum de tentatives', 500, undefined);
 };

@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   
   // Only accept POST requests
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
+    res.status(405).json({ error: 'Méthode non autorisée' });
     return;
   }
   
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     console.log('Processing request without formidable');
     
     res.status(201).json({
-      message: 'Dossier successfully received (simplified)',
+      message: 'Dossier reçu avec succès (simplifié)',
       timestamp: new Date().toISOString(),
       data: {
         agentEmail: 'test@example.com',
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Simple API error:', error);
     res.status(500).json({ 
-      error: 'Internal server error',
+      error: 'Erreur interne du serveur',
       details: error.message 
     });
   }

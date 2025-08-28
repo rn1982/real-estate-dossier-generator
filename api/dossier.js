@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
   // Only accept POST requests
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
+    res.status(405).json({ error: 'Méthode non autorisée' });
     return;
   }
 
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
       if (parseError.httpCode) {
         res.status(parseError.httpCode).json({ error: parseError.message });
       } else {
-        res.status(400).json({ error: 'Failed to parse form data' });
+        res.status(400).json({ error: 'Échec de l\'analyse des données du formulaire' });
       }
       return;
     }
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
 
     if (missingFields.length > 0) {
       res.status(400).json({ 
-        error: 'Missing required fields', 
+        error: 'Champs obligatoires manquants', 
         missingFields 
       });
       return;
@@ -101,7 +101,7 @@ export default async function handler(req, res) {
     const validPropertyTypes = ['appartement', 'maison'];
     if (!validPropertyTypes.includes(formData.propertyType)) {
       res.status(400).json({ 
-        error: 'Invalid property type',
+        error: 'Type de propriété invalide',
         validTypes: validPropertyTypes 
       });
       return;
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
     ];
     if (!validTargetBuyers.includes(formData.targetBuyer)) {
       res.status(400).json({ 
-        error: 'Invalid target buyer',
+        error: 'Acheteur cible invalide',
         validTypes: validTargetBuyers 
       });
       return;
@@ -133,7 +133,7 @@ export default async function handler(req, res) {
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
         if (!allowedTypes.includes(file.mimetype)) {
           res.status(415).json({ 
-            error: 'Unsupported media type',
+            error: 'Type de fichier non supporté',
             file: file.originalFilename,
             allowedTypes 
           });
@@ -159,7 +159,7 @@ export default async function handler(req, res) {
 
     // Return success response
     res.status(201).json({
-      message: 'Dossier successfully received',
+      message: 'Dossier reçu avec succès',
       timestamp: new Date().toISOString(),
       data: {
         ...formData,
@@ -183,22 +183,22 @@ export default async function handler(req, res) {
 
     // Handle specific formidable errors
     if (error.code === 'LIMIT_FILE_SIZE') {
-      res.status(413).json({ error: 'File size exceeds maximum allowed (10MB)' });
+      res.status(413).json({ error: 'La taille du fichier dépasse le maximum autorisé (10 Mo)' });
       return;
     }
     if (error.code === 'LIMIT_FILE_COUNT') {
-      res.status(413).json({ error: 'Too many files. Maximum 20 files allowed.' });
+      res.status(413).json({ error: 'Trop de fichiers. Maximum 20 fichiers autorisés.' });
       return;
     }
     if (error.code === 'LIMIT_UNEXPECTED_FILE') {
-      res.status(400).json({ error: 'Unexpected file field' });
+      res.status(400).json({ error: 'Champ de fichier inattendu' });
       return;
     }
 
     // Generic error response with more details in development
     const errorMessage = process.env.NODE_ENV === 'development' 
       ? `Internal server error: ${error.message}`
-      : 'Internal server error';
+      : 'Erreur interne du serveur';
     res.status(500).json({ error: errorMessage });
   }
 }
