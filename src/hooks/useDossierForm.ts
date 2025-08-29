@@ -14,7 +14,7 @@ export const useDossierForm = () => {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   
   const form = useForm<DossierFormValues>({
-    resolver: zodResolver(dossierFormSchema),
+    resolver: zodResolver(dossierFormSchema) as any,
     mode: 'onChange', // Enable real-time validation
     reValidateMode: 'onChange', // Revalidate on every change
     delayError: 500, // Debounce validation errors by 500ms
@@ -35,7 +35,7 @@ export const useDossierForm = () => {
   });
 
   // Add form persistence
-  const { clearFormAndStorage } = useFormPersistence(form, isSubmitting, submitSuccess);
+  const { clearFormAndStorage } = useFormPersistence(form as any, isSubmitting, submitSuccess);
 
   const handleSubmit = async (data: DossierFormValues) => {
     setIsSubmitting(true);
