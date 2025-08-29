@@ -7,17 +7,8 @@
       "maxDuration": 30,
       "memory": 1024
     },
-    "api/test-pdf.js": {
-      "maxDuration": 30,
-      "memory": 1024
-    },
-    "api/test-pdf-base64.js": {
-      "maxDuration": 30,
-      "memory": 1024
-    },
-    "api/poc/puppeteerPoc.js": {
-      "maxDuration": 30,
-      "memory": 1024
+    "api/health.js": {
+      "maxDuration": 10
     }
   },
   "buildCommand": "npm run build",
