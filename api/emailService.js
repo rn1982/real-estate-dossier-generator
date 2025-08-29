@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import fetch from 'node-fetch';
 
 // Initialize Resend with API key from environment variable
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -300,12 +301,118 @@ Cet email a été envoyé à ${formData.agentEmail}`;
 }
 
 /**
- * Sends confirmation email with property data
+ * Generates PDF for the property dossier
+ * @param {Object} formData - Property form data
+ * @param {Object} aiContent - AI generated content
+ * @returns {Promise<Buffer>} PDF buffer or null if generation fails
+ */
+async function generatePDF(formData, aiContent) {
+  try {
+    // Prepare property data for PDF generation
+    const propertyData = {
+      title: formData.propertyType === 'apartment' ? 'Appartement' : 'Maison',
+      address: formData.address || formData.propertyAddress,
+      price: formData.price,
+      targetBuyer: formData.targetBuyer,
+      features: {
+        rooms: formData.roomCount || '0',
+        bedrooms: formData.bedroomCount || '0',
+        bathrooms: formData.bathroomCount || '0',
+        livingArea: formData.livingArea || '0',
+        landArea: formData.landArea || '0',
+        yearBuilt: formData.yearBuilt || formData.constructionYear || 'Non spécifié',
+        heatingType: formData.heatingType || 'Non spécifié',
+        energyClass: formData.energyClass || 'D',
+        ghgClass: formData.ghgClass || 'D'
+      },
+      amenities: {
+        garage: formData.hasGarage,
+        garden: formData.hasGarden,
+        pool: formData.hasPool,
+        balcony: formData.hasBalcony
+      },
+      highlights: formData.features || [],
+      description: formData.propertyDescription || formData.sellingPoints || '',
+      generationDate: new Date().toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      agent: {
+        name: formData.agentName || 'Agent immobilier',
+        email: formData.agentEmail,
+        phone: formData.agentPhone || '',
+        company: formData.agentCompany || ''
+      },
+      photos: [] // Photos would need to be handled separately
+    };
+
+    // Add AI content if available
+    if (aiContent) {
+      propertyData.aiNarrative = aiContent.narrative;
+      propertyData.aiSocialContent = aiContent.socialMedia;
+    }
+
+    // Call the PDF generation API
+    const pdfApiUrl = process.env.NODE_ENV === 'production' 
+      ? `${process.env.VERCEL_URL || 'https://real-estate-dossier-generator.vercel.app'}/api/generate-pdf`
+      : 'http://localhost:3000/api/generate-pdf';
+
+    const response = await fetch(pdfApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        propertyData,
+        customizations: {
+          template: 'modern',
+          colors: {},
+          layout: {
+            photoStyle: 'grid',
+            photoColumns: 2,
+            showAgent: true,
+            showSocial: true,
+            showAI: !!aiContent
+          }
+        },
+        aiContent
+      })
+    });
+
+    if (!response.ok) {
+      try {
+        const error = await response.json();
+        console.error('PDF generation failed:', error);
+      } catch (e) {
+        console.error('PDF generation failed with status:', response.status);
+      }
+      return null;
+    }
+
+    // Get PDF as array buffer and convert to Buffer
+    const arrayBuffer = await response.arrayBuffer();
+    const pdfBuffer = Buffer.from(arrayBuffer);
+    
+    if (pdfBuffer && pdfBuffer.length > 0) {
+      return pdfBuffer;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Failed to generate PDF:', error);
+    return null;
+  }
+}
+
+/**
+ * Sends confirmation email with property data and PDF attachment
  * @param {Object} formData - Property form data
  * @param {number} photoCount - Number of photos uploaded
+ * @param {Object} aiContent - AI generated content (optional)
  * @returns {Promise<Object>} Result from Resend API
  */
-export async function sendConfirmationEmail(formData, photoCount) {
+export async function sendConfirmationEmail(formData, photoCount, aiContent = null) {
   try {
     // Validate required environment variables
     if (!process.env.RESEND_API_KEY) {
@@ -319,6 +426,27 @@ export async function sendConfirmationEmail(formData, photoCount) {
     const htmlContent = generateEmailHTML(formData, photoCount);
     const textContent = generateEmailText(formData, photoCount);
 
+    // Generate PDF dossier
+    let attachments = [];
+    const pdfBuffer = await generatePDF(formData, aiContent);
+    
+    if (pdfBuffer) {
+      // Format filename from address
+      const addressSlug = (formData.address || formData.propertyAddress || 'dossier')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 50);
+      
+      attachments.push({
+        filename: `dossier-${addressSlug}.pdf`,
+        content: pdfBuffer
+      });
+      console.log('PDF generated and attached to email');
+    } else {
+      console.warn('PDF generation failed, sending email without attachment');
+    }
+
     // Send email using Resend
     const result = await resend.emails.send({
       from: `${fromName} <${fromAddress}>`,
@@ -326,6 +454,7 @@ export async function sendConfirmationEmail(formData, photoCount) {
       subject: 'Confirmation de réception - Dossier immobilier',
       html: htmlContent,
       text: textContent,
+      attachments: attachments
     });
 
     console.log('Email sent successfully:', result);
