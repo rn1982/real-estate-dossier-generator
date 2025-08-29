@@ -14,11 +14,11 @@ interface PDFFormData {
   propertyType?: string;
   address?: string;
   price?: string;
-  livingArea?: string;
-  roomCount?: string;
-  bedrooms?: string;
-  bathrooms?: string;
-  constructionYear?: string;
+  livingArea?: string | number;
+  roomCount?: string | number;
+  bedrooms?: string | number;
+  bathrooms?: string | number;
+  constructionYear?: string | number;
   propertyDescription?: string;
   keyPoints?: string;
   photoUrls?: string[];
@@ -30,13 +30,14 @@ interface PDFFormData {
   pdfColorPrimary?: string;
   pdfColorSecondary?: string;
   pdfColorAccent?: string;
-  pdfLogo?: string;
+  pdfLogo?: string | File;
   pdfPhotoLayout?: string;
   pdfPhotoColumns?: number;
   pdfShowAgent?: boolean;
   pdfShowSocial?: boolean;
   pdfShowAI?: boolean;
   aiContent?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export const generatePDF = async (formData: PDFFormData): Promise<Blob> => {
