@@ -1,3 +1,4 @@
+/* eslint-env jest */
 import { createMocks } from 'node-mocks-http';
 import handler from '../generate-pdf.js';
 
@@ -26,7 +27,7 @@ describe('/api/generate-pdf', () => {
   });
 
   it('should accept valid property data with customizations', async () => {
-    const { req, res } = createMocks({
+    const { req } = createMocks({
       method: 'POST',
       body: {
         propertyData: {
