@@ -10,7 +10,7 @@ export class PDFServiceError extends Error {
   }
 }
 
-export const generatePDF = async (data: any): Promise<Blob> => {
+export const generatePDF = async (formData: any): Promise<Blob> => {
   const apiUrl = '/api/generate-pdf';
   
   try {
@@ -21,39 +21,39 @@ export const generatePDF = async (data: any): Promise<Blob> => {
       },
       body: JSON.stringify({
         propertyData: {
-          propertyType: data.propertyType,
-          address: data.address,
-          price: data.price,
-          surface: data.livingArea || '',
-          rooms: data.roomCount || '',
-          bedrooms: data.bedrooms || '',
-          bathrooms: data.bathrooms || '',
-          constructionYear: data.constructionYear || '',
-          description: data.propertyDescription || '',
-          highlights: data.keyPoints ? data.keyPoints.split(',').map((h: string) => h.trim()) : [],
-          photos: data.photoUrls || [],
-          agentName: data.agentName || '',
-          agentPhone: data.agentPhone || '',
-          agentEmail: data.agentEmail,
-          agencyName: data.agencyName || '',
+          propertyType: formData.propertyType,
+          address: formData.address,
+          price: formData.price,
+          surface: formData.livingArea || '',
+          rooms: formData.roomCount || '',
+          bedrooms: formData.bedrooms || '',
+          bathrooms: formData.bathrooms || '',
+          constructionYear: formData.constructionYear || '',
+          description: formData.propertyDescription || '',
+          highlights: formData.keyPoints ? formData.keyPoints.split(',').map((h: string) => h.trim()) : [],
+          photos: formData.photoUrls || [],
+          agentName: formData.agentName || '',
+          agentPhone: formData.agentPhone || '',
+          agentEmail: formData.agentEmail,
+          agencyName: formData.agencyName || '',
         },
         customizations: {
-          template: data.pdfTemplate || 'modern',
+          template: formData.pdfTemplate || 'modern',
           colors: {
-            primary: data.pdfColorPrimary,
-            secondary: data.pdfColorSecondary,
-            accent: data.pdfColorAccent,
+            primary: formData.pdfColorPrimary,
+            secondary: formData.pdfColorSecondary,
+            accent: formData.pdfColorAccent,
           },
-          logo: data.pdfLogo || '',
+          logo: formData.pdfLogo || '',
           layout: {
-            photoStyle: data.pdfPhotoLayout || 'grid',
-            photoColumns: data.pdfPhotoColumns || 2,
-            showAgent: data.pdfShowAgent !== false,
-            showSocial: data.pdfShowSocial !== false,
-            showAI: data.pdfShowAI !== false,
+            photoStyle: formData.pdfPhotoLayout || 'grid',
+            photoColumns: formData.pdfPhotoColumns || 2,
+            showAgent: formData.pdfShowAgent !== false,
+            showSocial: formData.pdfShowSocial !== false,
+            showAI: formData.pdfShowAI !== false,
           }
         },
-        aiContent: data.aiContent || {}
+        aiContent: formData.aiContent || {}
       }),
     });
     
@@ -78,20 +78,12 @@ export const generatePDF = async (data: any): Promise<Blob> => {
       throw new PDFServiceError(errorMessage, response.status, undefined, errorData);
     }
     
-    // Get the response as JSON (contains base64 PDF)
-    const data = await response.json();
+    // Get the response as blob (binary PDF data)
+    const pdfBlob = await response.blob();
     
-    if (!data.success || !data.pdf) {
+    if (!pdfBlob || pdfBlob.size === 0) {
       throw new PDFServiceError('Format de réponse PDF invalide', 500);
     }
-    
-    // Convert base64 to blob
-    const binaryString = atob(data.pdf);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    const pdfBlob = new Blob([bytes], { type: 'application/pdf' });
     
     return pdfBlob;
     

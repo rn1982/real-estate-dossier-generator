@@ -8,7 +8,14 @@ export const captureMessage = vi.fn()
 export const withProfiler = vi.fn((component: ComponentType) => component)
 export const browserTracingIntegration = vi.fn(() => ({ name: 'BrowserTracing' }))
 export const replayIntegration = vi.fn(() => ({ name: 'Replay' }))
-export const configureScope = vi.fn((callback: (scope: any) => void) => {
+interface SentryScope {
+  setContext: ReturnType<typeof vi.fn>;
+  setTag: ReturnType<typeof vi.fn>;
+  setExtra: ReturnType<typeof vi.fn>;
+  setUser: ReturnType<typeof vi.fn>;
+}
+
+export const configureScope = vi.fn((callback: (scope: SentryScope) => void) => {
   callback({
     setContext: vi.fn(),
     setTag: vi.fn(),

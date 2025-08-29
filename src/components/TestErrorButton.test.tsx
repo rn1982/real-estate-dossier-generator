@@ -139,7 +139,7 @@ describe('TestErrorButton', () => {
     })
 
     it('should trigger API error and handle response', async () => {
-      ;(global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
         status: 500,
       })
@@ -160,7 +160,7 @@ describe('TestErrorButton', () => {
 
     it('should capture API error on fetch failure', async () => {
       const fetchError = new Error('Network error')
-      ;(global.fetch as any).mockRejectedValueOnce(fetchError)
+      ;(global.fetch as jest.Mock).mockRejectedValueOnce(fetchError)
       
       render(<TestErrorButton />)
       
