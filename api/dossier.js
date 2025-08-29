@@ -2,46 +2,9 @@ import formidable from 'formidable';
 import os from 'os';
 import path from 'path';
 import { sendConfirmationEmail, validateEmail } from './emailService.js';
+import { generateAIContent } from './aiServiceGemini.js';
 
-// Simple in-memory rate limiter (resets on server restart)
-const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in ms
-const MAX_REQUESTS_PER_WINDOW = 10; // 10 submissions per hour per IP
-
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const userRecord = rateLimitMap.get(ip);
-  
-  if (!userRecord) {
-    rateLimitMap.set(ip, { count: 1, windowStart: now });
-    return true;
-  }
-  
-  // Check if window has expired
-  if (now - userRecord.windowStart > RATE_LIMIT_WINDOW) {
-    rateLimitMap.set(ip, { count: 1, windowStart: now });
-    return true;
-  }
-  
-  // Check if limit exceeded
-  if (userRecord.count >= MAX_REQUESTS_PER_WINDOW) {
-    return false;
-  }
-  
-  // Increment counter
-  userRecord.count++;
-  return true;
-}
-
-// Clean up old entries periodically (every hour)
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, record] of rateLimitMap.entries()) {
-    if (now - record.windowStart > RATE_LIMIT_WINDOW) {
-      rateLimitMap.delete(ip);
-    }
-  }
-}, RATE_LIMIT_WINDOW);
+// Rate limiting is now handled in aiServiceGemini.js
 
 export const config = {
   api: {
@@ -70,15 +33,8 @@ async function handler(req, res) {
     return;
   }
 
-  // Check rate limit
+  // Get client IP for rate limiting
   const clientIp = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || 'unknown';
-  if (!checkRateLimit(clientIp)) {
-    res.status(429).json({ 
-      error: 'Trop de demandes. Veuillez réessayer plus tard.',
-      retryAfter: 3600 // seconds
-    });
-    return;
-  }
 
   try {
     // Configure formidable with proper temp directory for Vercel
@@ -139,41 +95,37 @@ async function handler(req, res) {
     const formData = {
       agentEmail: getValue('agentEmail'),
       propertyType: getValue('propertyType'),
-      address: getValue('address'),
+      propertyAddress: getValue('address'),
+      propertyLocation: getValue('propertyLocation') || getValue('address'),
       price: getValue('price'),
       targetBuyer: getValue('targetBuyer'),
-      roomCount: getValue('roomCount') || null,
-      livingArea: getValue('livingArea') || null,
-      constructionYear: getValue('constructionYear') || null,
-      keyPoints: getValue('keyPoints') || null,
-      propertyDescription: getValue('propertyDescription') || null,
+      roomCount: getValue('roomCount') || '0',
+      bedroomCount: getValue('bedroomCount') || '0',
+      bathroomCount: getValue('bathroomCount') || '0',
+      livingArea: getValue('livingArea') || '0',
+      landArea: getValue('landArea') || null,
+      yearBuilt: getValue('constructionYear') || null,
+      hasGarage: getValue('hasGarage') === 'true',
+      hasGarden: getValue('hasGarden') === 'true',
+      hasPool: getValue('hasPool') === 'true',
+      hasBalcony: getValue('hasBalcony') === 'true',
+      heatingType: getValue('heatingType') || 'Non spécifié',
+      energyClass: getValue('energyClass') || 'D',
+      ghgClass: getValue('ghgClass') || 'D',
+      features: getValue('features') ? getValue('features').split(',').map(f => f.trim()) : [],
+      sellingPoints: getValue('keyPoints') || null,
     };
 
-    // Validate property type enum
-    const validPropertyTypes = ['appartement', 'maison'];
-    if (!validPropertyTypes.includes(formData.propertyType)) {
-      res.status(400).json({ 
-        error: 'Type de propriété invalide',
-        validTypes: validPropertyTypes 
-      });
-      return;
-    }
-
-    // Validate target buyer enum
+    // Validate target buyer enum (propertyType validation handled by AI service)
     const validTargetBuyers = [
       'jeune_famille',
-      'professionnel',
+      'jeune_actif',
       'retraite',
-      'investisseur',
-      'premier_acheteur',
-      'famille_multigenerationnelle'
+      'investisseur'
     ];
     if (!validTargetBuyers.includes(formData.targetBuyer)) {
-      res.status(400).json({ 
-        error: 'Acheteur cible invalide',
-        validTypes: validTargetBuyers 
-      });
-      return;
+      // Use default if invalid
+      formData.targetBuyer = 'jeune_famille';
     }
 
     // Process file metadata
@@ -218,8 +170,50 @@ async function handler(req, res) {
       });
     }
 
-    // Send confirmation email
-    const emailResult = await sendConfirmationEmail(formData, photoMetadata.length);
+    // Generate AI content for Epic 2 (Story 2.1)
+    let aiContent = null;
+    let aiGenerationError = null;
+    
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        console.log('Generating AI content for property...');
+        const aiResult = await generateAIContent(formData, clientIp);
+        aiContent = {
+          narrative: aiResult.narrative,
+          socialMedia: {
+            facebook: aiResult.facebook,
+            instagram: aiResult.instagram,
+            linkedin: aiResult.linkedin
+          },
+          generatedAt: new Date().toISOString(),
+          cached: aiResult.cached,
+          generationTime: aiResult.generationTime,
+          rateLimit: aiResult.rateLimit
+        };
+        console.log('AI content generated successfully', {
+          cached: aiResult.cached,
+          generationTime: aiResult.generationTime
+        });
+      } catch (error) {
+        console.error('AI content generation failed:', error);
+        aiGenerationError = error.message;
+        
+        // Handle rate limit error
+        if (error.status === 429) {
+          res.status(429).json({ 
+            error: 'Trop de demandes d\'IA. Veuillez réessayer plus tard.',
+            retryAfter: error.retryAfter || 3600
+          });
+          return;
+        }
+        // Continue with the process even if AI fails
+      }
+    } else {
+      console.log('Gemini API key not configured, skipping AI content generation');
+    }
+
+    // Send confirmation email (now includes AI content if available)
+    const emailResult = await sendConfirmationEmail(formData, photoMetadata.length, aiContent);
     
     if (!emailResult.success) {
       // Log email error but don't fail the request
@@ -234,10 +228,16 @@ async function handler(req, res) {
       message: 'Dossier reçu avec succès',
       timestamp: new Date().toISOString(),
       data: {
-        ...formData,
+        agentEmail: formData.agentEmail,
+        propertyType: formData.propertyType,
+        address: formData.propertyAddress,
+        price: formData.price,
+        targetBuyer: formData.targetBuyer,
         photoCount: photoMetadata.length,
       },
+      aiContent,
       emailSent: emailResult.success,
+      aiGenerationError
     });
 
   } catch (error) {

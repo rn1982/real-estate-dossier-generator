@@ -109,6 +109,56 @@ These improvements should be considered when:
 3. As part of regular refactoring activities
 4. When implementing new features that touch these areas
 
+## Improvements from Story 2.1 Review
+
+### 9. Test Isolation Issues in Dossier Endpoint Tests
+**Issue**: Tests in `api/__tests__/dossier.test.js` pass individually but fail when run as a suite
+**Details**: 11 dossier endpoint tests failing in batch execution due to mock contamination between test runs
+**Recommendation**:
+- Implement proper test isolation using `vi.isolateModules()` when available
+- Consider moving to separate test files for better isolation
+- Investigate using test contexts or fresh mock instances per test
+**Priority**: Low
+**Impact**: Developer experience and test reliability
+**Reference**: Story 2.1 QA Review (2025-08-29)
+
+### 10. Frontend Component Test Suite Failures
+**Issue**: Multiple frontend component tests failing across the application
+**Details**: 46 frontend-related test failures including ErrorBoundary (8), Toast (4), DossierForm (6), and Sentry integration (2)
+**Recommendation**:
+- Audit frontend test suite for outdated assertions
+- Update mock configurations for React Testing Library
+- Fix Sentry mock setup for test environment
+- Consider removing/rewriting brittle tests
+**Priority**: Medium
+**Impact**: CI/CD pipeline reliability
+**Reference**: Story 2.1 QA Review (2025-08-29)
+
+### 11. AI Service Enhancement Opportunities
+**Issue**: Opportunities for advanced content validation and performance optimization
+**Details**: Current implementation meets MVP requirements but has room for enhancement
+**Recommendation**:
+- Implement fact-checking beyond basic numeric validation
+- Add plagiarism detection and language quality scoring
+- Consider distributed caching (Redis) for better scalability
+- Optimize prompt engineering for token usage
+- Add detailed metrics dashboard for AI performance
+**Priority**: Low
+**Impact**: Content quality improvement and API cost reduction
+**Reference**: Story 2.1 QA Review (2025-08-29)
+
+### 12. Test Data Management Improvements
+**Issue**: Test data is duplicated across multiple test files with inconsistent naming
+**Details**: `validFormData` defined differently in multiple places, making maintenance difficult
+**Recommendation**:
+- Create test data factories/builders
+- Centralize common test fixtures
+- Implement consistent naming conventions
+- Consider using a test data library like Faker
+**Priority**: Low
+**Impact**: Test maintainability and reduced duplication
+**Reference**: Story 2.1 QA Review (2025-08-29)
+
 ## Notes
 - These are non-blocking improvements that passed QA review
 - Implementation is at the discretion of the development team
