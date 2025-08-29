@@ -1,0 +1,74 @@
+/* Eco Template Preset - Green and Sustainable */
+:root {
+  --primary-color: #27ae60;
+  --secondary-color: #2c3e50;
+  --accent-color: #16a085;
+  --font-family: 'Open Sans', 'Helvetica', sans-serif;
+  --heading-weight: 600;
+  --body-weight: 400;
+  --border-radius: 2mm;
+}
+
+/* Eco specific overrides */
+.property-title {
+  font-weight: 600;
+  letter-spacing: -0.3mm;
+  color: var(--secondary-color);
+}
+
+.property-subtitle {
+  color: var(--primary-color);
+}
+
+.section-title {
+  font-weight: 600;
+  text-transform: none;
+  border-bottom-color: var(--primary-color);
+  border-bottom-width: 2px;
+}
+
+.ai-narrative {
+  background: #e8f8f5;
+  border-left-color: var(--primary-color);
+  border-left-width: 4px;
+  position: relative;
+}
+
+.ai-narrative::before {
+  content: '🌿';
+  position: absolute;
+  left: -15mm;
+  top: 5mm;
+  font-size: 16pt;
+}
+
+.agent-section {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+  border-radius: 2mm;
+}
+
+.highlight-icon {
+  background: var(--primary-color);
+  position: relative;
+}
+
+.social-post {
+  border-left-color: var(--primary-color);
+  border-left-width: 3px;
+  background: #f0fdf4;
+}
+
+.feature-value {
+  color: var(--primary-color);
+}
+
+.energy-class {
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+/* Eco-specific energy rating highlight */
+.details-table tr:nth-child(9) td:last-child {
+  color: var(--primary-color);
+  font-weight: 600;
+}

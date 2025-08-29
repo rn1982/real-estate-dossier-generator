@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dossier Immobilier - {{address}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+            background: white;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 0 auto;
+            background: white;
+            page-break-after: always;
+        }
+
+        /* Cover Page Styles */
+        .cover-page {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 297mm;
+            padding: 0;
+            position: relative;
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 50%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .cover-content {
+            padding: 30mm 20mm;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .property-title {
+            font-size: 36pt;
+            font-weight: 300;
+            color: #2c3e50;
+            margin-bottom: 10mm;
+            letter-spacing: -0.5mm;
+        }
+
+        .property-subtitle {
+            font-size: 18pt;
+            color: #7f8c8d;
+            margin-bottom: 5mm;
+        }
+
+        .key-features {
+            display: flex;
+            gap: 20mm;
+            margin-top: 15mm;
+            padding-top: 10mm;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        .feature {
+            text-align: center;
+        }
+
+        .feature-value {
+            font-size: 24pt;
+            font-weight: bold;
+            color: #2c3e50;
+            display: block;
+        }
+
+        .feature-label {
+            font-size: 10pt;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2mm;
+        }
+
+        /* Property Overview Section */
+        .section {
+            margin-bottom: 15mm;
+        }
+
+        .section-title {
+            font-size: 24pt;
+            color: #2c3e50;
+            margin-bottom: 8mm;
+            padding-bottom: 3mm;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .ai-narrative {
+            background: #f8f9fa;
+            padding: 10mm;
+            border-left: 4px solid #3498db;
+            font-size: 11pt;
+            line-height: 1.8;
+            color: #2c3e50;
+            text-align: justify;
+        }
+
+        .highlights-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5mm;
+            margin-top: 10mm;
+        }
+
+        .highlight-item {
+            display: flex;
+            align-items: center;
+            font-size: 11pt;
+        }
+
+        .highlight-icon {
+            width: 6mm;
+            height: 6mm;
+            background: #3498db;
+            border-radius: 50%;
+            margin-right: 3mm;
+            flex-shrink: 0;
+        }
+
+        /* Photo Gallery */
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5mm;
+            margin-top: 10mm;
+        }
+
+        .photo-item {
+            width: 100%;
+            height: 60mm;
+            object-fit: cover;
+            border-radius: 2mm;
+        }
+
+        .photo-item.large {
+            grid-column: span 2;
+            height: 80mm;
+        }
+
+        /* Property Details Table */
+        .details-table {
+            width: 100%;
+            margin-top: 10mm;
+            border-collapse: collapse;
+        }
+
+        .details-table tr {
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .details-table td {
+            padding: 4mm 0;
+            font-size: 11pt;
+        }
+
+        .details-table td:first-child {
+            font-weight: 600;
+            color: #7f8c8d;
+            width: 40%;
+        }
+
+        .details-table td:last-child {
+            color: #2c3e50;
+        }
+
+        /* Agent Contact Section */
+        .agent-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15mm;
+            border-radius: 3mm;
+            margin-top: 20mm;
+        }
+
+        .agent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10mm;
+        }
+
+        .agent-title {
+            font-size: 18pt;
+            font-weight: 300;
+        }
+
+        .agent-logo {
+            max-height: 15mm;
+            max-width: 40mm;
+        }
+
+        .agent-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8mm;
+        }
+
+        .agent-detail {
+            display: flex;
+            align-items: center;
+        }
+
+        .agent-icon {
+            width: 8mm;
+            height: 8mm;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            margin-right: 4mm;
+            flex-shrink: 0;
+        }
+
+        .agent-text {
+            font-size: 11pt;
+            line-height: 1.4;
+        }
+
+        .agent-label {
+            display: block;
+            font-size: 9pt;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Social Media Section */
+        .social-section {
+            background: #f8f9fa;
+            padding: 10mm;
+            border-radius: 2mm;
+            margin-top: 10mm;
+        }
+
+        .social-title {
+            font-size: 14pt;
+            color: #2c3e50;
+            margin-bottom: 5mm;
+        }
+
+        .social-posts {
+            display: grid;
+            gap: 5mm;
+        }
+
+        .social-post {
+            background: white;
+            padding: 5mm;
+            border-radius: 2mm;
+            border-left: 3px solid #3498db;
+        }
+
+        .social-platform {
+            font-size: 9pt;
+            color: #3498db;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 2mm;
+        }
+
+        .social-content {
+            font-size: 10pt;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        .footer {
+            position: absolute;
+            bottom: 15mm;
+            left: 15mm;
+            right: 15mm;
+            text-align: center;
+            font-size: 9pt;
+            color: #95a5a6;
+            padding-top: 5mm;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        /* Print Optimizations */
+        @media print {
+            .page {
+                margin: 0;
+                border: none;
+                box-shadow: none;
+            }
+            
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Cover Page -->
+    <div class="page cover-page">
+        <img src="{{heroImage}}" alt="{{address}}" class="hero-image">
+        <div class="cover-content">
+            <h1 class="property-title">{{propertyType}}</h1>
+            <h2 class="property-subtitle">{{address}}</h2>
+            <div class="key-features">
+                <div class="feature">
+                    <span class="feature-value">{{price}}</span>
+                    <span class="feature-label">Prix</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-value">{{surface}} m²</span>
+                    <span class="feature-label">Surface</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-value">{{rooms}}</span>
+                    <span class="feature-label">Pièces</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-value">{{bedrooms}}</span>
+                    <span class="feature-label">Chambres</span>
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            Dossier généré le {{generationDate}}
+        </div>
+    </div>
+
+    <!-- Property Overview Page -->
+    <div class="page">
+        <section class="section">
+            <h2 class="section-title">Présentation du Bien</h2>
+            <div class="ai-narrative">
+                {{aiNarrative}}
+            </div>
+            <div class="highlights-grid">
+                {{#highlights}}
+                <div class="highlight-item">
+                    <div class="highlight-icon"></div>
+                    <span>{{.}}</span>
+                </div>
+                {{/highlights}}
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Galerie Photos</h2>
+            <div class="photo-gallery">
+                {{#photos}}
+                <img src="{{.}}" alt="Photo {{@index}}" class="photo-item {{#if @first}}large{{/if}}">
+                {{/photos}}
+            </div>
+        </section>
+    </div>
+
+    <!-- Property Details Page -->
+    <div class="page">
+        <section class="section">
+            <h2 class="section-title">Détails du Bien</h2>
+            <table class="details-table">
+                <tr>
+                    <td>Type de bien</td>
+                    <td>{{propertyType}}</td>
+                </tr>
+                <tr>
+                    <td>Surface habitable</td>
+                    <td>{{surface}} m²</td>
+                </tr>
+                <tr>
+                    <td>Nombre de pièces</td>
+                    <td>{{rooms}}</td>
+                </tr>
+                <tr>
+                    <td>Nombre de chambres</td>
+                    <td>{{bedrooms}}</td>
+                </tr>
+                <tr>
+                    <td>Salles de bain</td>
+                    <td>{{bathrooms}}</td>
+                </tr>
+                <tr>
+                    <td>Étage</td>
+                    <td>{{floor}}</td>
+                </tr>
+                <tr>
+                    <td>Année de construction</td>
+                    <td>{{yearBuilt}}</td>
+                </tr>
+                <tr>
+                    <td>Chauffage</td>
+                    <td>{{heating}}</td>
+                </tr>
+                <tr>
+                    <td>Performance énergétique</td>
+                    <td>{{energyClass}}</td>
+                </tr>
+                <tr>
+                    <td>Charges mensuelles</td>
+                    <td>{{monthlyCharges}}</td>
+                </tr>
+                <tr>
+                    <td>Taxe foncière</td>
+                    <td>{{propertyTax}}</td>
+                </tr>
+            </table>
+        </section>
+
+        {{#if aiSocialContent}}
+        <section class="social-section">
+            <h3 class="social-title">Contenu Réseaux Sociaux</h3>
+            <div class="social-posts">
+                {{#if aiSocialContent.instagram}}
+                <div class="social-post">
+                    <div class="social-platform">Instagram</div>
+                    <div class="social-content">{{aiSocialContent.instagram}}</div>
+                </div>
+                {{/if}}
+                {{#if aiSocialContent.facebook}}
+                <div class="social-post">
+                    <div class="social-platform">Facebook</div>
+                    <div class="social-content">{{aiSocialContent.facebook}}</div>
+                </div>
+                {{/if}}
+            </div>
+        </section>
+        {{/if}}
+
+        <!-- Agent Contact Section -->
+        <section class="agent-section">
+            <div class="agent-header">
+                <h2 class="agent-title">Votre Contact</h2>
+                {{#if agentLogo}}
+                <img src="{{agentLogo}}" alt="Logo" class="agent-logo">
+                {{/if}}
+            </div>
+            <div class="agent-info">
+                <div class="agent-detail">
+                    <div class="agent-icon"></div>
+                    <div class="agent-text">
+                        <span class="agent-label">Agent</span>
+                        {{agentName}}
+                    </div>
+                </div>
+                <div class="agent-detail">
+                    <div class="agent-icon"></div>
+                    <div class="agent-text">
+                        <span class="agent-label">Téléphone</span>
+                        {{agentPhone}}
+                    </div>
+                </div>
+                <div class="agent-detail">
+                    <div class="agent-icon"></div>
+                    <div class="agent-text">
+                        <span class="agent-label">Email</span>
+                        {{agentEmail}}
+                    </div>
+                </div>
+                <div class="agent-detail">
+                    <div class="agent-icon"></div>
+                    <div class="agent-text">
+                        <span class="agent-label">Agence</span>
+                        {{agencyName}}
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

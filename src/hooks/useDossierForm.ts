@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { dossierFormSchema, type DossierFormValues } from '@/types/dossierForm';
 import { useState } from 'react';
 import { submitDossierWithRetry, DossierServiceError } from '@/services/dossierService';
+import { generatePDF, downloadPDF, PDFServiceError } from '@/services/pdfService';
 import { useToast } from '@/contexts/ToastContext';
 import { useFormPersistence } from './useFormPersistence';
 
@@ -24,6 +25,12 @@ export const useDossierForm = () => {
       price: '',
       targetBuyer: 'jeune_famille',
       photos: [],
+      pdfTemplate: 'modern',
+      pdfPhotoLayout: 'grid',
+      pdfPhotoColumns: 2,
+      pdfShowAgent: true,
+      pdfShowSocial: true,
+      pdfShowAI: true,
     },
   });
 
@@ -120,9 +127,58 @@ export const useDossierForm = () => {
     }
   };
 
+  const handleGeneratePDF = async (data: DossierFormValues) => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    try {
+      // Show loading toast
+      toast({
+        title: 'Génération du PDF en cours...',
+        description: 'Veuillez patienter pendant la création de votre dossier.',
+        variant: 'info',
+        duration: 0, // Keep showing until dismissed
+      });
+      
+      // Generate PDF
+      const pdfBlob = await generatePDF(data);
+      
+      // Download the PDF
+      downloadPDF(pdfBlob, `dossier-${data.address?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'property'}.pdf`);
+      
+      // Show success message
+      toast({
+        title: 'PDF généré avec succès!',
+        description: 'Le dossier a été téléchargé dans votre dossier de téléchargements.',
+        variant: 'success',
+        duration: 5000,
+      });
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      
+      let errorMessage = 'Une erreur est survenue lors de la génération du PDF.';
+      
+      if (error instanceof PDFServiceError) {
+        errorMessage = error.message;
+      }
+      
+      setSubmitError(errorMessage);
+      toast({
+        title: 'Erreur de génération PDF',
+        description: errorMessage,
+        variant: 'error',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return {
     form,
     handleSubmit,
+    handleGeneratePDF,
     isSubmitting,
     submitError,
     submitSuccess,

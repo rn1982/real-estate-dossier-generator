@@ -2,6 +2,14 @@
   "functions": {
     "api/dossier.js": {
       "maxDuration": 30
+    },
+    "api/generate-pdf.js": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
+    "api/poc/puppeteerPoc.js": {
+      "maxDuration": 30,
+      "memory": 1024
     }
   },
   "buildCommand": "npm run build",

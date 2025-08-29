@@ -10,7 +10,7 @@ interface StoredFormData<T = Record<string, unknown>> {
   timestamp: number;
 }
 
-export const useFormPersistence = <T extends Record<string, unknown>>(
+export const useFormPersistence = <T extends Record<string, any> = Record<string, any>>(
   form: UseFormReturn<T>,
   isSubmitting: boolean,
   submitSuccess: boolean
@@ -76,7 +76,6 @@ export const useFormPersistence = <T extends Record<string, unknown>>(
         // Restore each field individually
         Object.keys(data).forEach((key) => {
           if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
-            // @ts-expect-error - Path type issue with generic T
             setValue(key as Path<T>, data[key]);
           }
         });

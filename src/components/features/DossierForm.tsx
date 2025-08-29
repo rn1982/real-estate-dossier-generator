@@ -7,16 +7,38 @@ import { Label } from '@/components/ui/Label';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ColorPicker } from '@/components/ui/ColorPicker';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { TemplatePreview } from './TemplatePreview';
 import { useDossierForm } from '@/hooks/useDossierForm';
-import { propertyTypeOptions, targetBuyerOptions } from '@/types/dossierForm';
+import { 
+  propertyTypeOptions, 
+  targetBuyerOptions,
+  pdfTemplateOptions,
+  pdfPhotoLayoutOptions 
+} from '@/types/dossierForm';
 
 export const DossierForm: React.FC = () => {
-  const { form, handleSubmit, isSubmitting, clearFormAndStorage } = useDossierForm();
+  const { form, handleSubmit, handleGeneratePDF, isSubmitting, clearFormAndStorage } = useDossierForm();
   const {
     register,
     control,
     formState: { errors },
+    watch,
   } = form;
+  
+  // Watch PDF customization values for preview
+  const pdfTemplate = watch('pdfTemplate');
+  const pdfColors = {
+    primary: watch('pdfPrimaryColor'),
+    secondary: watch('pdfSecondaryColor'),
+    accent: watch('pdfAccentColor'),
+  };
+  const pdfPhotoLayout = watch('pdfPhotoLayout');
+  const pdfPhotoColumns = watch('pdfPhotoColumns');
+  const pdfShowAgent = watch('pdfShowAgent');
+  const pdfShowSocial = watch('pdfShowSocial');
+  const pdfShowAI = watch('pdfShowAI');
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8">
@@ -279,6 +301,203 @@ export const DossierForm: React.FC = () => {
           </div>
         </FormSection>
 
+        {/* Section 5: PDF Customization */}
+        <FormSection
+          title="5. Personnalisation du PDF"
+          icon={
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          }
+        >
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="pdfTemplate" required>
+                  Modèle de PDF
+                </Label>
+                <Controller
+                  name="pdfTemplate"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      id="pdfTemplate"
+                      options={pdfTemplateOptions}
+                      error={errors.pdfTemplate?.message}
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  )}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="pdfPhotoLayout">
+                  Disposition des photos
+                </Label>
+                <Controller
+                  name="pdfPhotoLayout"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      id="pdfPhotoLayout"
+                      options={pdfPhotoLayoutOptions}
+                      error={errors.pdfPhotoLayout?.message}
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Controller
+                name="pdfPrimaryColor"
+                control={control}
+                render={({ field }) => (
+                  <ColorPicker
+                    id="pdfPrimaryColor"
+                    label="Couleur principale"
+                    error={errors.pdfPrimaryColor?.message}
+                    disabled={isSubmitting}
+                    {...field}
+                  />
+                )}
+              />
+              
+              <Controller
+                name="pdfSecondaryColor"
+                control={control}
+                render={({ field }) => (
+                  <ColorPicker
+                    id="pdfSecondaryColor"
+                    label="Couleur secondaire"
+                    error={errors.pdfSecondaryColor?.message}
+                    disabled={isSubmitting}
+                    {...field}
+                  />
+                )}
+              />
+              
+              <Controller
+                name="pdfAccentColor"
+                control={control}
+                render={({ field }) => (
+                  <ColorPicker
+                    id="pdfAccentColor"
+                    label="Couleur d'accent"
+                    error={errors.pdfAccentColor?.message}
+                    disabled={isSubmitting}
+                    {...field}
+                  />
+                )}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="pdfLogo">
+                Logo de l'agence
+              </Label>
+              <Controller
+                name="pdfLogo"
+                control={control}
+                render={({ field: { onChange, value } }) => (
+                  <FileUpload
+                    onFilesChange={(files) => onChange(files?.[0])}
+                    value={value ? [value] : undefined}
+                    error={errors.pdfLogo?.message}
+                    maxFiles={1}
+                    disabled={isSubmitting}
+                  />
+                )}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="pdfPhotoColumns">
+                Nombre de colonnes pour les photos (2-4)
+              </Label>
+              <Controller
+                name="pdfPhotoColumns"
+                control={control}
+                render={({ field: { onChange, value, ...field } }) => (
+                  <Input
+                    id="pdfPhotoColumns"
+                    type="number"
+                    min="2"
+                    max="4"
+                    error={errors.pdfPhotoColumns?.message}
+                    disabled={isSubmitting}
+                    onChange={(e) => onChange(e.target.value ? parseInt(e.target.value) : 2)}
+                    value={value ?? 2}
+                    {...field}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Sections à afficher</Label>
+              <div className="space-y-2">
+                <Controller
+                  name="pdfShowAgent"
+                  control={control}
+                  render={({ field: { value, onChange } }) => (
+                    <Checkbox
+                      id="pdfShowAgent"
+                      label="Afficher les informations de l'agent"
+                      checked={value}
+                      onChange={onChange}
+                      disabled={isSubmitting}
+                    />
+                  )}
+                />
+                
+                <Controller
+                  name="pdfShowSocial"
+                  control={control}
+                  render={({ field: { value, onChange } }) => (
+                    <Checkbox
+                      id="pdfShowSocial"
+                      label="Afficher le contenu réseaux sociaux"
+                      checked={value}
+                      onChange={onChange}
+                      disabled={isSubmitting}
+                    />
+                  )}
+                />
+                
+                <Controller
+                  name="pdfShowAI"
+                  control={control}
+                  render={({ field: { value, onChange } }) => (
+                    <Checkbox
+                      id="pdfShowAI"
+                      label="Afficher le récit généré par l'IA"
+                      checked={value}
+                      onChange={onChange}
+                      disabled={isSubmitting}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+            
+            <div className="pt-4">
+              <TemplatePreview
+                template={pdfTemplate}
+                colors={pdfColors}
+                photoLayout={pdfPhotoLayout}
+                photoColumns={pdfPhotoColumns}
+                showAgent={pdfShowAgent}
+                showSocial={pdfShowSocial}
+                showAI={pdfShowAI}
+              />
+            </div>
+          </div>
+        </FormSection>
+
         {/* Submit and Clear Buttons */}
         <div className="flex justify-center gap-4 pt-6">
           <Button
@@ -292,18 +511,24 @@ export const DossierForm: React.FC = () => {
             Effacer le formulaire
           </Button>
           <Button
-            type="submit"
+            type="button"
             size="lg"
             disabled={isSubmitting}
-            className="min-w-[200px] relative"
+            onClick={() => form.handleSubmit(handleGeneratePDF)()}
+            className="min-w-[250px] relative bg-primary hover:bg-primary/90"
           >
             {isSubmitting ? (
               <>
                 <LoadingSpinner size="sm" className="mr-2" />
-                Envoi en cours...
+                Génération en cours...
               </>
             ) : (
-              'Soumettre'
+              <>
+                <svg className="w-5 h-5 mr-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Générer le Dossier PDF
+              </>
             )}
           </Button>
         </div>

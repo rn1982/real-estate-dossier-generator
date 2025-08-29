@@ -55,6 +55,27 @@ export const dossierFormSchema = z.object({
       'Seuls les fichiers image sont acceptés'
     )
     .optional(),
+  
+  // Section 5: PDF Customization
+  pdfTemplate: z.enum(['modern', 'classic', 'luxury', 'corporate', 'eco']).optional().default('modern'),
+  pdfPrimaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Format de couleur invalide').optional(),
+  pdfSecondaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Format de couleur invalide').optional(),
+  pdfAccentColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Format de couleur invalide').optional(),
+  pdfLogo: z.instanceof(File)
+    .refine(
+      (file) => file.size <= 2 * 1024 * 1024,
+      'Le logo doit faire moins de 2 MB'
+    )
+    .refine(
+      (file) => file.type.startsWith('image/'),
+      'Le logo doit être une image'
+    )
+    .optional(),
+  pdfPhotoLayout: z.enum(['grid', 'list']).optional().default('grid'),
+  pdfPhotoColumns: z.number().min(2).max(4).optional().default(2),
+  pdfShowAgent: z.boolean().optional().default(true),
+  pdfShowSocial: z.boolean().optional().default(true),
+  pdfShowAI: z.boolean().optional().default(true),
 });
 
 export type DossierFormValues = z.infer<typeof dossierFormSchema>;
@@ -71,4 +92,17 @@ export const targetBuyerOptions = [
   { value: 'investisseur', label: 'Investisseur' },
   { value: 'premier_acheteur', label: 'Premier acheteur' },
   { value: 'famille_multigenerationnelle', label: 'Famille multigénérationnelle' },
+] as const;
+
+export const pdfTemplateOptions = [
+  { value: 'modern', label: 'Moderne - Épuré et minimaliste' },
+  { value: 'classic', label: 'Classique - Traditionnel et élégant' },
+  { value: 'luxury', label: 'Luxe - Noir et or sophistiqué' },
+  { value: 'corporate', label: 'Corporate - Professionnel et neutre' },
+  { value: 'eco', label: 'Éco - Vert et durable' },
+] as const;
+
+export const pdfPhotoLayoutOptions = [
+  { value: 'grid', label: 'Grille' },
+  { value: 'list', label: 'Liste' },
 ] as const;

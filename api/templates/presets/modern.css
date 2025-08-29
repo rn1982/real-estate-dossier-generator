@@ -1,0 +1,40 @@
+/* Modern Template Preset - Clean and Minimalist */
+:root {
+  --primary-color: #3498db;
+  --secondary-color: #2c3e50;
+  --accent-color: #667eea;
+  --font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --heading-weight: 300;
+  --body-weight: 400;
+  --border-radius: 2mm;
+}
+
+/* Modern specific overrides */
+.property-title {
+  font-weight: 300;
+  letter-spacing: -0.5mm;
+}
+
+.section-title {
+  font-weight: 400;
+  text-transform: none;
+}
+
+.ai-narrative {
+  background: #f8f9fa;
+  border-left-width: 4px;
+}
+
+.agent-section {
+  border-radius: 3mm;
+  background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%);
+}
+
+.highlight-icon {
+  transition: all 0.3s ease;
+}
+
+.social-post {
+  border-left-width: 3px;
+  background: white;
+}

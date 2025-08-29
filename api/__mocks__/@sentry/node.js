@@ -1,3 +1,4 @@
+/* global jest */
 // Mock for @sentry/node
 const init = jest.fn();
 const captureException = jest.fn();

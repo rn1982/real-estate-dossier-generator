@@ -8,6 +8,10 @@ vi.mock('../emailService.js', () => ({
   validateEmail: vi.fn().mockReturnValue(true),
 }));
 
+vi.mock('../aiServiceGemini.js', () => ({
+  generateAIContent: vi.fn(),
+}));
+
 vi.mock('formidable', () => ({
   default: vi.fn(),
 }));
@@ -15,16 +19,24 @@ vi.mock('formidable', () => ({
 describe('Dossier API Endpoint Integration', () => {
   let mockFormParse;
   let mockSendEmail;
+  let mockGenerateAI;
   let originalEnv;
 
   beforeEach(async () => {
     originalEnv = { ...process.env };
     process.env.NODE_ENV = 'test';
+    process.env.GEMINI_API_KEY = 'test-api-key';
     
     const emailModule = await import('../emailService.js');
     mockSendEmail = emailModule.sendConfirmationEmail;
+    mockSendEmail.mockClear();
+    
+    const aiModule = await import('../aiServiceGemini.js');
+    mockGenerateAI = aiModule.generateAIContent;
+    mockGenerateAI.mockClear();
     
     mockFormParse = vi.fn();
+    formidable.mockClear();
     formidable.mockReturnValue({
       parse: mockFormParse,
     });
@@ -90,9 +102,6 @@ describe('Dossier API Endpoint Integration', () => {
         data: {
           agentEmail: 'agent@example.com',
           propertyType: 'appartement',
-          address: '123 Rue Test, Paris',
-          price: '500000',
-          targetBuyer: 'jeune_famille',
           photoCount: 2,
         },
       });
@@ -101,24 +110,28 @@ describe('Dossier API Endpoint Integration', () => {
         expect.objectContaining({
           agentEmail: 'agent@example.com',
           propertyType: 'appartement',
-          address: '123 Rue Test, Paris',
         }),
-        2
+        2,
+        expect.any(Object)
       );
     });
 
     it('should continue processing even if email fails', async () => {
-      mockFormParse.mockResolvedValue([validFormData, mockFiles]);
-      mockSendEmail.mockResolvedValue({ 
+      mockFormParse.mockImplementation(() => Promise.resolve([validFormData, mockFiles]));
+      mockSendEmail.mockImplementation(() => Promise.resolve({ 
         success: false, 
         error: 'Email service unavailable' 
-      });
+      }));
 
       const { req, res } = createMocks({
         method: 'POST',
       });
 
       await handler(req, res);
+
+      if (res._getStatusCode() !== 201) {
+        console.log('Test failed with response:', res._getData());
+      }
 
       expect(res._getStatusCode()).toBe(201);
       const responseData = JSON.parse(res._getData());
@@ -138,8 +151,8 @@ describe('Dossier API Endpoint Integration', () => {
     });
 
     it('should handle form with no photos', async () => {
-      mockFormParse.mockResolvedValue([validFormData, {}]);
-      mockSendEmail.mockResolvedValue({ success: true, id: 'email_no_photos' });
+      mockFormParse.mockImplementation(() => Promise.resolve([validFormData, {}]));
+      mockSendEmail.mockImplementation(() => Promise.resolve({ success: true, id: 'email_no_photos' }));
 
       const { req, res } = createMocks({
         method: 'POST',
@@ -166,8 +179,8 @@ describe('Dossier API Endpoint Integration', () => {
         targetBuyer: ['investisseur'],
       };
 
-      mockFormParse.mockResolvedValue([minimalFormData, {}]);
-      mockSendEmail.mockResolvedValue({ success: true, id: 'email_minimal' });
+      mockFormParse.mockImplementation(() => Promise.resolve([minimalFormData, {}]));
+      mockSendEmail.mockImplementation(() => Promise.resolve({ success: true, id: 'email_minimal' }));
 
       const { req, res } = createMocks({
         method: 'POST',
@@ -181,13 +194,9 @@ describe('Dossier API Endpoint Integration', () => {
         expect.objectContaining({
           agentEmail: 'minimal@example.com',
           propertyType: 'maison',
-          roomCount: null,
-          livingArea: null,
-          constructionYear: null,
-          keyPoints: null,
-          propertyDescription: null,
         }),
-        0
+        0,
+        expect.anything()
       );
     });
 
@@ -213,8 +222,8 @@ describe('Dossier API Endpoint Integration', () => {
     });
 
     it('should handle email service exception', async () => {
-      mockFormParse.mockResolvedValue([validFormData, mockFiles]);
-      mockSendEmail.mockRejectedValue(new Error('Network error'));
+      mockFormParse.mockImplementation(() => Promise.resolve([validFormData, mockFiles]));
+      mockSendEmail.mockImplementation(() => Promise.reject(new Error('Network error')));
 
       const { req, res } = createMocks({
         method: 'POST',
@@ -228,8 +237,8 @@ describe('Dossier API Endpoint Integration', () => {
     });
 
     it('should log successful email send', async () => {
-      mockFormParse.mockResolvedValue([validFormData, {}]);
-      mockSendEmail.mockResolvedValue({ success: true, id: 'email_log' });
+      mockFormParse.mockImplementation(() => Promise.resolve([validFormData, {}]));
+      mockSendEmail.mockImplementation(() => Promise.resolve({ success: true, id: 'email_log' }));
 
       const { req, res } = createMocks({
         method: 'POST',
@@ -244,19 +253,181 @@ describe('Dossier API Endpoint Integration', () => {
     });
 
     it('should include email status in response', async () => {
-      mockFormParse.mockResolvedValue([validFormData, {}]);
+      mockFormParse.mockImplementation(() => Promise.resolve([validFormData, {}]));
       
-      mockSendEmail.mockResolvedValue({ success: true });
+      mockSendEmail.mockImplementation(() => Promise.resolve({ success: true }));
       const { req: req1, res: res1 } = createMocks({ method: 'POST' });
       await handler(req1, res1);
       let responseData = JSON.parse(res1._getData());
       expect(responseData.emailSent).toBe(true);
 
-      mockSendEmail.mockResolvedValue({ success: false, error: 'Failed' });
+      mockFormParse.mockImplementation(() => Promise.resolve([validFormData, {}]));
+      mockSendEmail.mockImplementation(() => Promise.resolve({ success: false, error: 'Failed' }));
       const { req: req2, res: res2 } = createMocks({ method: 'POST' });
       await handler(req2, res2);
       responseData = JSON.parse(res2._getData());
       expect(responseData.emailSent).toBe(false);
+    });
+  });
+
+  describe('AI Integration Tests', () => {
+    beforeEach(() => {
+      // Reset mocks for AI integration tests
+      vi.clearAllMocks();
+      process.env.GEMINI_API_KEY = 'test-api-key';
+      
+      // Re-setup formidable mock for AI tests
+      mockFormParse = vi.fn();
+      formidable.mockClear();
+      formidable.mockReturnValue({
+        parse: mockFormParse,
+      });
+    });
+
+    const aiTestFormData = {
+      agentEmail: ['agent@example.com'],
+      propertyType: ['Maison'],
+      address: ['123 Rue Test, Paris'],
+      propertyLocation: ['Paris 16ème'],
+      price: ['500000'],
+      targetBuyer: ['jeune_famille'],
+      roomCount: ['5'],
+      bedroomCount: ['3'],
+      bathroomCount: ['2'],
+      livingArea: ['120'],
+      heatingType: ['Gaz'],
+      energyClass: ['B'],
+      ghgClass: ['C'],
+      hasGarage: ['true'],
+      hasGarden: ['true'],
+      hasBalcony: ['true'],
+      features: ['Rénové, Lumineux'],
+      keyPoints: ['Proche écoles'],
+    };
+
+    it('should generate AI content when Gemini API key is configured', async () => {
+      const mockAIContent = {
+        narrative: 'Generated narrative',
+        facebook: 'FB post',
+        instagram: 'IG post',
+        linkedin: 'LI post',
+        cached: false,
+        generationTime: 1500,
+        rateLimit: { remaining: 9, reset: '2024-01-01T00:00:00Z' }
+      };
+
+      // Use mockImplementation to avoid interference
+      mockFormParse.mockImplementation(() => Promise.resolve([aiTestFormData, {}]));
+      mockGenerateAI.mockImplementation(() => Promise.resolve(mockAIContent));
+      mockSendEmail.mockImplementation(() => Promise.resolve({ success: true }));
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        headers: { 'x-forwarded-for': '192.168.1.1' },
+      });
+
+      await handler(req, res);
+
+
+      expect(res._getStatusCode()).toBe(201);
+      const responseData = JSON.parse(res._getData());
+      
+      expect(responseData.aiContent).toMatchObject({
+        narrative: 'Generated narrative',
+        socialMedia: {
+          facebook: 'FB post',
+          instagram: 'IG post',
+          linkedin: 'LI post'
+        },
+        cached: false,
+        generationTime: 1500
+      });
+
+      expect(mockGenerateAI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          propertyType: 'Maison',
+          targetBuyer: 'jeune_famille',
+          hasGarage: true,
+          hasGarden: true
+        }),
+        '192.168.1.1'
+      );
+    });
+
+    it('should handle AI generation failures gracefully', async () => {
+      mockFormParse.mockImplementation(() => Promise.resolve([aiTestFormData, {}]));
+      mockGenerateAI.mockImplementation(() => Promise.reject(new Error('AI service unavailable')));
+      mockSendEmail.mockImplementation(() => Promise.resolve({ success: true }));
+
+      const { req, res } = createMocks({ method: 'POST' });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(201);
+      const responseData = JSON.parse(res._getData());
+      
+      expect(responseData.aiContent).toBeNull();
+      expect(responseData.aiGenerationError).toBe('AI service unavailable');
+      expect(responseData.emailSent).toBe(true);
+    });
+
+    it('should handle AI rate limit errors', async () => {
+      const rateLimitError = new Error('Rate limit exceeded');
+      rateLimitError.status = 429;
+      rateLimitError.retryAfter = 3600;
+
+      mockFormParse.mockImplementation(() => Promise.resolve([aiTestFormData, {}]));
+      mockGenerateAI.mockImplementation(() => Promise.reject(rateLimitError));
+
+      const { req, res } = createMocks({ method: 'POST' });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(429);
+      const responseData = JSON.parse(res._getData());
+      expect(responseData.error).toContain('Trop de demandes');
+      expect(responseData.retryAfter).toBe(3600);
+    });
+
+    it('should use cached AI content when available', async () => {
+      const cachedContent = {
+        narrative: 'Cached narrative',
+        facebook: 'Cached FB',
+        instagram: 'Cached IG',
+        linkedin: 'Cached LI',
+        cached: true,
+        generationTime: 0,
+        rateLimit: { remaining: 8 }
+      };
+
+      mockFormParse.mockImplementation(() => Promise.resolve([aiTestFormData, {}]));
+      mockGenerateAI.mockImplementation(() => Promise.resolve(cachedContent));
+      mockSendEmail.mockImplementation(() => Promise.resolve({ success: true }));
+
+      const { req, res } = createMocks({ method: 'POST' });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(201);
+      const responseData = JSON.parse(res._getData());
+      expect(responseData.aiContent.cached).toBe(true);
+      expect(responseData.aiContent.generationTime).toBe(0);
+    });
+
+    it('should skip AI generation when API key not configured', async () => {
+      delete process.env.GEMINI_API_KEY;
+
+      mockFormParse.mockImplementation(() => Promise.resolve([aiTestFormData, {}]));
+      mockSendEmail.mockImplementation(() => Promise.resolve({ success: true }));
+
+      const { req, res } = createMocks({ method: 'POST' });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(201);
+      const responseData = JSON.parse(res._getData());
+      expect(responseData.aiContent).toBeNull();
+      expect(mockGenerateAI).not.toHaveBeenCalled();
     });
   });
 

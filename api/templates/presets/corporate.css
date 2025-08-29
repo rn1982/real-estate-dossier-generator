@@ -1,0 +1,61 @@
+/* Corporate Template Preset - Professional and Clean */
+:root {
+  --primary-color: #34495e;
+  --secondary-color: #2c3e50;
+  --accent-color: #3498db;
+  --font-family: 'Roboto', 'Arial', sans-serif;
+  --heading-weight: 500;
+  --body-weight: 400;
+  --border-radius: 1mm;
+}
+
+/* Corporate specific overrides */
+.property-title {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.section-title {
+  font-weight: 500;
+  text-transform: none;
+  border-bottom-width: 2px;
+  border-bottom-color: var(--accent-color);
+}
+
+.ai-narrative {
+  background: #ecf0f1;
+  border-left-color: var(--accent-color);
+  border-left-width: 3px;
+  font-size: 10.5pt;
+}
+
+.agent-section {
+  background: var(--secondary-color);
+  border-radius: 1mm;
+}
+
+.agent-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 5mm;
+}
+
+.highlight-icon {
+  background: var(--accent-color);
+  width: 5mm;
+  height: 5mm;
+}
+
+.social-post {
+  border-left-color: var(--accent-color);
+  border-left-width: 2px;
+  background: white;
+}
+
+.details-table td:first-child {
+  color: var(--primary-color);
+}
+
+.footer {
+  font-size: 8pt;
+}

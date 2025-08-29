@@ -1,0 +1,46 @@
+/* Classic Template Preset - Traditional and Elegant */
+:root {
+  --primary-color: #8B7355;
+  --secondary-color: #2F4F4F;
+  --accent-color: #DAA520;
+  --font-family: 'Georgia', 'Times New Roman', serif;
+  --heading-weight: 700;
+  --body-weight: 400;
+  --border-radius: 0;
+}
+
+/* Classic specific overrides */
+.property-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1mm;
+}
+
+.section-title {
+  font-weight: 600;
+  text-transform: capitalize;
+  border-bottom-width: 3px;
+}
+
+.ai-narrative {
+  background: #fdfcf8;
+  border-left-width: 5px;
+  border-left-style: double;
+  font-style: italic;
+}
+
+.agent-section {
+  border-radius: 0;
+  background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%);
+  border: 2px solid var(--accent-color);
+}
+
+.highlight-icon {
+  border: 1px solid var(--primary-color);
+}
+
+.social-post {
+  border-left-width: 5px;
+  border-left-style: double;
+  background: #fdfcf8;
+}

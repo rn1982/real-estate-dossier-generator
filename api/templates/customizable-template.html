@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dossier Immobilier - {{address}}</title>
+    <style>
+        /* CUSTOMIZABLE THEME VARIABLES */
+        :root {
+            /* Agent Branding Colors - Easy to change */
+            --primary-color: {{primaryColor || '#3498db'}};
+            --secondary-color: {{secondaryColor || '#2c3e50'}};
+            --accent-color: {{accentColor || '#667eea'}};
+            
+            /* Layout Options */
+            --cover-image-height: {{coverImageHeight || '50%'}};
+            --page-orientation: {{orientation || 'portrait'}};
+            --sidebar-width: {{sidebarWidth || '0'}};
+            
+            /* Typography */
+            --font-primary: {{fontFamily || 'Helvetica Neue, Helvetica, Arial, sans-serif'}};
+            --font-size-base: {{fontSize || '11pt'}};
+            --heading-style: {{headingStyle || 'modern'}}; /* modern, classic, bold */
+            
+            /* Component Visibility */
+            --show-agent-section: {{showAgent || 'block'}};
+            --show-social-media: {{showSocial || 'block'}};
+            --show-hero-image: {{showHero || 'block'}};
+            
+            /* Image Layout */
+            --photo-grid-columns: {{photoColumns || '2'}};
+            --photo-style: {{photoStyle || 'grid'}}; /* grid, carousel, list */
+        }
+
+        /* Base styles using variables */
+        body {
+            font-family: var(--font-primary);
+            color: var(--secondary-color);
+            font-size: var(--font-size-base);
+        }
+
+        .section-title {
+            color: var(--secondary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .agent-section {
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%);
+            display: var(--show-agent-section);
+        }
+
+        .hero-image {
+            height: var(--cover-image-height);
+            display: var(--show-hero-image);
+        }
+
+        .photo-gallery {
+            grid-template-columns: repeat(var(--photo-grid-columns), 1fr);
+        }
+
+        /* Layout Templates */
+        {{#if layoutStyle}}
+        {{#equals layoutStyle 'sidebar'}}
+        .page {
+            display: grid;
+            grid-template-columns: var(--sidebar-width) 1fr;
+        }
+        {{/equals}}
+        {{#equals layoutStyle 'magazine'}}
+        .page {
+            column-count: 2;
+            column-gap: 20px;
+        }
+        {{/equals}}
+        {{/if}}
+
+        /* Quick Style Presets */
+        .template-luxury {
+            --primary-color: #d4af37;
+            --secondary-color: #1a1a1a;
+            --font-primary: 'Playfair Display', serif;
+        }
+
+        .template-modern {
+            --primary-color: #00d4ff;
+            --secondary-color: #333;
+            --font-primary: 'Inter', sans-serif;
+        }
+
+        .template-classic {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --font-primary: 'Georgia', serif;
+        }
+    </style>
+    
+    <!-- Agent's Custom CSS Override -->
+    {{#if customCSS}}
+    <style>
+        {{{customCSS}}}
+    </style>
+    {{/if}}
+</head>
+<body class="template-{{templateStyle}}">
+    <!-- Content remains the same but styled dynamically -->
+    <div class="page">
+        <!-- Dynamic layout based on agent preferences -->
+        {{#if customLayout}}
+            {{{customLayout}}}
+        {{else}}
+            <!-- Default layout -->
+            <!-- Same content as before but with dynamic styling -->
+        {{/if}}
+    </div>
+</body>
+</html>

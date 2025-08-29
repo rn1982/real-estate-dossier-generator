@@ -1,0 +1,61 @@
+/* Luxury Template Preset - Black and Gold Elegance */
+:root {
+  --primary-color: #FFD700;
+  --secondary-color: #000000;
+  --accent-color: #C9A961;
+  --font-family: 'Playfair Display', 'Georgia', serif;
+  --heading-weight: 700;
+  --body-weight: 300;
+  --border-radius: 0;
+}
+
+/* Luxury specific overrides */
+.property-title {
+  font-weight: 700;
+  letter-spacing: 2mm;
+  text-transform: uppercase;
+}
+
+.property-subtitle {
+  color: var(--accent-color);
+  font-weight: 300;
+}
+
+.section-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1mm;
+  border-bottom-color: var(--primary-color);
+  border-bottom-width: 1px;
+}
+
+.ai-narrative {
+  background: #1a1a1a;
+  color: #f5f5f5;
+  border-left-color: var(--primary-color);
+  border-left-width: 3px;
+}
+
+.agent-section {
+  background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+  border: 1px solid var(--primary-color);
+}
+
+.highlight-icon {
+  background: var(--primary-color);
+  border: 1px solid var(--secondary-color);
+}
+
+.social-post {
+  border-left-color: var(--primary-color);
+  border-left-width: 3px;
+  background: #f5f5f5;
+}
+
+.feature-value {
+  color: var(--primary-color);
+}
+
+.footer {
+  color: var(--accent-color);
+}
