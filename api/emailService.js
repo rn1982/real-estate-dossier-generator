@@ -355,7 +355,7 @@ async function generatePDF(formData, aiContent) {
 
     // Call the PDF generation API
     const pdfApiUrl = process.env.NODE_ENV === 'production' 
-      ? `${process.env.VERCEL_URL || 'https://real-estate-dossier-generator.vercel.app'}/api/generate-pdf`
+      ? `https://${process.env.VERCEL_URL || 'real-estate-dossier-generator.vercel.app'}/api/generate-pdf`
       : 'http://localhost:3000/api/generate-pdf';
 
     const response = await fetch(pdfApiUrl, {
@@ -390,12 +390,12 @@ async function generatePDF(formData, aiContent) {
       return null;
     }
 
-    // Get PDF as array buffer and convert to Buffer
-    const arrayBuffer = await response.arrayBuffer();
-    const pdfBuffer = Buffer.from(arrayBuffer);
+    // Get the response as JSON (contains base64 PDF)
+    const result = await response.json();
     
-    if (pdfBuffer && pdfBuffer.length > 0) {
-      return pdfBuffer;
+    if (result.success && result.pdf) {
+      // Convert base64 to buffer for attachment
+      return Buffer.from(result.pdf, 'base64');
     }
 
     return null;

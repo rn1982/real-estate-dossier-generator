@@ -107,12 +107,20 @@ export const generatePDF = async (formData: PDFFormData): Promise<Blob> => {
       throw new PDFServiceError(errorMessage, response.status, undefined, errorData);
     }
     
-    // Get the response as blob (binary PDF data)
-    const pdfBlob = await response.blob();
+    // Get the response as JSON (contains base64 PDF)
+    const data = await response.json();
     
-    if (!pdfBlob || pdfBlob.size === 0) {
+    if (!data.success || !data.pdf) {
       throw new PDFServiceError('Format de réponse PDF invalide', 500);
     }
+    
+    // Convert base64 to blob
+    const binaryString = atob(data.pdf);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const pdfBlob = new Blob([bytes], { type: 'application/pdf' });
     
     return pdfBlob;
     
