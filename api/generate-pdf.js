@@ -441,14 +441,16 @@ export default async function handler(req, res) {
       hasAI: !!propertyData.aiNarrative
     });
     
-    // Set response headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="dossier-${Date.now()}.pdf"`);
-    res.setHeader('X-Performance-Total', performanceMetrics.totalTime.toString());
-    res.setHeader('X-Performance-PDF', performanceMetrics.pdfGenerationTime.toString());
+    // Convert PDF to base64 for proper transmission
+    const pdfBase64 = pdfBuffer.toString('base64');
     
-    // Send PDF buffer
-    res.send(pdfBuffer);
+    // Send as JSON with base64 encoded PDF
+    res.status(200).json({
+      success: true,
+      pdf: pdfBase64,
+      performance: performanceMetrics,
+      filename: `dossier-${Date.now()}.pdf`
+    });
     
   } catch (error) {
     console.error('PDF generation failed:', error);

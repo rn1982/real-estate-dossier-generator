@@ -211,7 +211,7 @@ describe('/api/generate-pdf', () => {
 
     it('should accept valid logo data', async () => {
       const validLogo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-      const { req, res } = createMocks({
+      const { req } = createMocks({
         method: 'POST',
         body: {
           propertyData: {

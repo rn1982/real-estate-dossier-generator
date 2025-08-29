@@ -1,4 +1,4 @@
-/* global describe, beforeEach, afterEach, it, expect, jest */
+/* eslint-env jest */
 import { jest } from '@jest/globals';
 
 // Mock @sentry/node before importing the module
