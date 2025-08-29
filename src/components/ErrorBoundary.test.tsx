@@ -19,7 +19,8 @@ describe('ErrorBoundary', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     
     // Reset the ErrorBoundary mock to render children by default
-    ;(SentryReact.ErrorBoundary as React.FC<{ children: React.ReactNode }> as any).mockImplementation(({ children }) => children)
+    const ErrorBoundaryMock = SentryReact.ErrorBoundary as unknown as ReturnType<typeof vi.fn>
+    ErrorBoundaryMock.mockImplementation(({ children }: { children: React.ReactNode }) => children)
   })
 
   afterEach(() => {
@@ -39,7 +40,8 @@ describe('ErrorBoundary', () => {
   it('should render error fallback when an error occurs', () => {
     // Mock the Sentry ErrorBoundary to trigger fallback
     const mockFallback = vi.fn()
-    ;(SentryReact.ErrorBoundary as React.FC<{ fallback: (props: { error: Error; resetError: () => void }) => React.ReactNode; children: React.ReactNode }> as any).mockImplementation(({ fallback, children }) => {
+    const ErrorBoundaryMock2 = SentryReact.ErrorBoundary as unknown as ReturnType<typeof vi.fn>
+    ErrorBoundaryMock2.mockImplementation(({ fallback, children }: { fallback: (props: { error: Error; resetError: () => void }) => React.ReactNode; children: React.ReactNode }) => {
       // Simulate error by calling fallback
       if (mockFallback.mock.calls.length === 0) {
         mockFallback()
@@ -65,7 +67,8 @@ describe('ErrorBoundary', () => {
     process.env.NODE_ENV = 'development'
 
     // Mock the Sentry ErrorBoundary to trigger fallback with specific error
-    ;(SentryReact.ErrorBoundary as React.FC<{ fallback: (props: { error: Error; resetError: () => void }) => React.ReactNode }> as any).mockImplementation(({ fallback }) => {
+    const ErrorBoundaryMock3 = SentryReact.ErrorBoundary as unknown as ReturnType<typeof vi.fn>
+    ErrorBoundaryMock3.mockImplementation(({ fallback }: { fallback: (props: { error: Error; resetError: () => void }) => React.ReactNode }) => {
       const error = new Error('Detailed test error message')
       const resetError = vi.fn()
       return fallback({ error, resetError })
@@ -88,7 +91,8 @@ describe('ErrorBoundary', () => {
     process.env.NODE_ENV = 'production'
 
     // Mock the Sentry ErrorBoundary to trigger fallback
-    ;(SentryReact.ErrorBoundary as React.FC<{ fallback: (props: { error: Error; resetError: () => void }) => React.ReactNode }> as any).mockImplementation(({ fallback }) => {
+    const ErrorBoundaryMock4 = SentryReact.ErrorBoundary as unknown as ReturnType<typeof vi.fn>
+    ErrorBoundaryMock4.mockImplementation(({ fallback }: { fallback: (props: { error: Error; resetError: () => void }) => React.ReactNode }) => {
       const error = new Error('Production error')
       const resetError = vi.fn()
       return fallback({ error, resetError })
@@ -111,7 +115,8 @@ describe('ErrorBoundary', () => {
     const mockResetError = vi.fn()
 
     // Mock the Sentry ErrorBoundary to trigger fallback
-    ;(SentryReact.ErrorBoundary as React.FC<{ fallback: (props: { error: Error; resetError: () => void }) => React.ReactNode }> as any).mockImplementation(({ fallback }) => {
+    const ErrorBoundaryMock5 = SentryReact.ErrorBoundary as unknown as ReturnType<typeof vi.fn>
+    ErrorBoundaryMock5.mockImplementation(({ fallback }: { fallback: (props: { error: Error; resetError: () => void }) => React.ReactNode }) => {
       const error = new Error('Test error')
       return fallback({ error, resetError: mockResetError })
     })
@@ -145,7 +150,8 @@ describe('ErrorBoundary', () => {
 
   it('should render with correct styling classes', () => {
     // Mock the Sentry ErrorBoundary to trigger fallback
-    (SentryReact.ErrorBoundary as React.FC<{ fallback: (props: { error: Error; resetError: () => void }) => React.ReactNode }> as any).mockImplementation(({ fallback }) => {
+    const ErrorBoundaryMock6 = SentryReact.ErrorBoundary as unknown as ReturnType<typeof vi.fn>
+    ErrorBoundaryMock6.mockImplementation(({ fallback }: { fallback: (props: { error: Error; resetError: () => void }) => React.ReactNode }) => {
       const error = new Error('Style test error')
       const resetError = vi.fn()
       return fallback({ error, resetError })

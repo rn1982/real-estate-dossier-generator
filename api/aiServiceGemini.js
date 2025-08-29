@@ -504,8 +504,10 @@ export function clearAllCaches() {
   rateLimitStore.clear();
 }
 
-// Functions are already exported individually above
+// Export validatePropertyData for testing
+export { validatePropertyData };
 
+// Functions are already exported individually above
 export default {
   generateAIContent,
   checkRateLimit,

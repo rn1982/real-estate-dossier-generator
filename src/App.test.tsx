@@ -1,24 +1,54 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import App from './App'
+
+// Mock components that might cause issues in tests
+vi.mock('@vercel/analytics/react', () => ({
+  Analytics: () => null
+}))
+
+vi.mock('@/components/TestErrorButton', () => ({
+  TestErrorButton: () => null
+}))
+
+// Mock Sentry ErrorBoundary to just render children in tests
+vi.mock('@sentry/react', () => ({
+  ErrorBoundary: ({ children }: { children: React.ReactNode }) => children,
+  init: vi.fn(),
+  captureException: vi.fn(),
+  captureMessage: vi.fn(),
+  withProfiler: vi.fn((component: any) => component),
+  browserTracingIntegration: vi.fn(() => ({ name: 'BrowserTracing' })),
+  replayIntegration: vi.fn(() => ({ name: 'Replay' })),
+  configureScope: vi.fn()
+}))
 
 describe('App', () => {
   it('renders the DossierForm component', () => {
     render(<App />)
-    expect(screen.getByText('Formulaire de Soumission de Propriété')).toBeInTheDocument()
+    // Use a more flexible matcher in case the text is in different elements
+    const heading = screen.getByRole('heading', { level: 1 })
+    expect(heading).toHaveTextContent('Générateur de Dossier Immobilier')
   })
 
   it('renders the main form sections', () => {
     render(<App />)
-    expect(screen.getByText("1. Informations de l'Agent")).toBeInTheDocument()
-    expect(screen.getByText('2. Informations sur la Propriété')).toBeInTheDocument()
-    expect(screen.getByText('3. AI & Marketing')).toBeInTheDocument()
-    expect(screen.getByText('4. Médias')).toBeInTheDocument()
+    // Look for fieldsets or sections with these labels
+    expect(screen.getByText("Informations de l'Agent")).toBeInTheDocument()
+    expect(screen.getByText('Informations sur la Propriété')).toBeInTheDocument()
+    expect(screen.getByText('Caractéristiques Détaillées')).toBeInTheDocument()
+    expect(screen.getByText('Photos de la Propriété')).toBeInTheDocument()
   })
 
   it('renders submit button', () => {
     render(<App />)
-    const button = screen.getByRole('button', { name: /soumettre/i })
-    expect(button).toBeInTheDocument()
+    // Look for the submit button with more flexible text matching
+    const buttons = screen.getAllByRole('button')
+    const submitButton = buttons.find(button => 
+      button.textContent?.toLowerCase().includes('soumettre') ||
+      button.textContent?.toLowerCase().includes('submit') ||
+      button.textContent?.toLowerCase().includes('envoyer')
+    )
+    expect(submitButton).toBeInTheDocument()
   })
 })

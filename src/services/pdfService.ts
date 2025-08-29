@@ -3,14 +3,43 @@ export class PDFServiceError extends Error {
     message: string,
     public status?: number,
     public code?: string,
-    public details?: any
+    public details?: unknown
   ) {
     super(message);
     this.name = 'PDFServiceError';
   }
 }
 
-export const generatePDF = async (formData: any): Promise<Blob> => {
+interface PDFFormData {
+  propertyType?: string;
+  address?: string;
+  price?: string;
+  livingArea?: string;
+  roomCount?: string;
+  bedrooms?: string;
+  bathrooms?: string;
+  constructionYear?: string;
+  propertyDescription?: string;
+  keyPoints?: string;
+  photoUrls?: string[];
+  agentName?: string;
+  agentPhone?: string;
+  agentEmail: string;
+  agencyName?: string;
+  pdfTemplate?: string;
+  pdfColorPrimary?: string;
+  pdfColorSecondary?: string;
+  pdfColorAccent?: string;
+  pdfLogo?: string;
+  pdfPhotoLayout?: string;
+  pdfPhotoColumns?: number;
+  pdfShowAgent?: boolean;
+  pdfShowSocial?: boolean;
+  pdfShowAI?: boolean;
+  aiContent?: Record<string, unknown>;
+}
+
+export const generatePDF = async (formData: PDFFormData): Promise<Blob> => {
   const apiUrl = '/api/generate-pdf';
   
   try {

@@ -10,7 +10,7 @@ interface StoredFormData<T = Record<string, unknown>> {
   timestamp: number;
 }
 
-export const useFormPersistence = <T extends Record<string, any> = Record<string, any>>(
+export const useFormPersistence = <T extends Record<string, unknown> = Record<string, unknown>>(
   form: UseFormReturn<T>,
   isSubmitting: boolean,
   submitSuccess: boolean
