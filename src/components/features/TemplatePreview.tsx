@@ -256,7 +256,9 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
     // Cache the content (limit cache size to 10 entries)
     if (previewCache.size >= 10) {
       const firstKey = previewCache.keys().next().value;
-      previewCache.delete(firstKey);
+      if (firstKey) {
+        previewCache.delete(firstKey);
+      }
     }
     previewCache.set(cacheKey, content);
 
