@@ -403,11 +403,44 @@ export default async function handler(req, res) {
       });
     }
     
+    // Map propertyData to template variables
+    const templateData = {
+      propertyType: propertyData.propertyType || 'Propriété',
+      address: propertyData.address || '',
+      price: formatPrice(propertyData.price),
+      surface: propertyData.surface || propertyData.livingArea || '0',
+      rooms: propertyData.rooms || propertyData.roomCount || '0',
+      bedrooms: propertyData.bedrooms || propertyData.bedroomCount || '0',
+      bathrooms: propertyData.bathrooms || propertyData.bathroomCount || '0',
+      yearBuilt: propertyData.yearBuilt || propertyData.constructionYear || '',
+      heatingType: propertyData.heatingType || '',
+      energyClass: propertyData.energyClass || '',
+      ghgClass: propertyData.ghgClass || '',
+      highlights: propertyData.highlights || [],
+      description: propertyData.description || '',
+      photos: propertyData.photos || [],
+      heroImage: propertyData.photos && propertyData.photos[0] || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHRleHQtYW5jaG9yPSJtaWRkbGUiIHg9IjQwMCIgeT0iMjAwIiBzdHlsZT0iZmlsbDojYWFhO2ZvbnQtd2VpZ2h0OmJvbGQ7Zm9udC1zaXplOjUwcHg7Zm9udC1mYW1pbHk6QXJpYWwsSGVsdmV0aWNhLHNhbnMtc2VyaWY7ZG9taW5hbnQtYmFzZWxpbmU6Y2VudHJhbCI+UGhvdG8gbm9uIGRpc3BvbmlibGU8L3RleHQ+PC9zdmc+',
+      agentName: propertyData.agentName || '',
+      agentPhone: propertyData.agentPhone || '',
+      agentEmail: propertyData.agentEmail || '',
+      agencyName: propertyData.agencyName || '',
+      generationDate: propertyData.generationDate,
+      aiNarrative: propertyData.aiNarrative || 'Description à venir...',
+      aiSocialContent: propertyData.aiSocialContent || {}
+    };
+    
+    // Helper function to format price
+    function formatPrice(price) {
+      if (!price) return '0 €';
+      const numPrice = parseInt(price);
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(numPrice);
+    }
+    
     // Generate HTML with customizations
     const htmlStartTime = Date.now();
     const htmlContent = await generateHtml(
       finalCustomizations.template,
-      propertyData,
+      templateData,
       finalCustomizations
     );
     performanceMetrics.htmlGenerationTime = Date.now() - htmlStartTime;
