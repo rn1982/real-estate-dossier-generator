@@ -1,5 +1,6 @@
 import chromium from '@sparticuz/chromium';
-import puppeteer from 'puppeteer-core';
+import puppeteerCore from 'puppeteer-core';
+import puppeteer from 'puppeteer';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -114,17 +115,27 @@ const TEMPLATE_PRESETS = {
  * Get browser instance for PDF generation
  */
 async function getBrowser() {
-  const isLocal = process.env.NODE_ENV !== 'production';
+  const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
   
-  if (isLocal) {
-    // Local development
-    return await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+  if (!isVercel) {
+    // Local development - use regular puppeteer
+    try {
+      return await puppeteer.launch({
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+    } catch (e) {
+      console.log('Falling back to puppeteer-core for local development');
+      // Fall back to puppeteer-core if puppeteer is not available
+      return await puppeteerCore.launch({
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+    }
   } else {
-    // Vercel production
-    return await puppeteer.launch({
+    // Vercel production - use puppeteer-core with chromium
+    console.log('Running on Vercel, using @sparticuz/chromium');
+    return await puppeteerCore.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath(),
@@ -441,8 +452,11 @@ export default async function handler(req, res) {
       hasAI: !!propertyData.aiNarrative
     });
     
+    // Log the type of pdfBuffer for debugging
+    console.log('PDF Buffer type:', typeof pdfBuffer, 'Is Buffer:', Buffer.isBuffer(pdfBuffer));
+    
     // Convert PDF to base64 for proper transmission
-    const pdfBase64 = pdfBuffer.toString('base64');
+    const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
     
     // Send as JSON with base64 encoded PDF
     res.status(200).json({
