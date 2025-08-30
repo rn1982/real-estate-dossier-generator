@@ -1,6 +1,13 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
+interface Html2CanvasOptionsExtended {
+  scale?: number;
+  logging?: boolean;
+  useCORS?: boolean;
+  allowTaint?: boolean;
+}
+
 export const generatePDFClient = async (elementId: string, filename: string = 'dossier.pdf') => {
   try {
     // Get the element to convert
@@ -21,7 +28,7 @@ export const generatePDFClient = async (elementId: string, filename: string = 'd
       logging: false,
       useCORS: true,
       allowTaint: true
-    });
+    } as Html2CanvasOptionsExtended);
 
     // Calculate dimensions
     const imgWidth = 210; // A4 width in mm

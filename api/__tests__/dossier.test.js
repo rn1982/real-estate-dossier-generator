@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createMocks } from 'node-mocks-http';
 import handler from '../dossier.js';
-import formidable from 'formidable';
 
 vi.mock('../emailService.js', () => ({
   sendConfirmationEmail: vi.fn(),
@@ -12,14 +11,23 @@ vi.mock('../aiServiceGemini.js', () => ({
   generateAIContent: vi.fn(),
 }));
 
-vi.mock('formidable', () => ({
-  default: vi.fn(),
-}));
+vi.mock('formidable', () => {
+  const mockFormParse = vi.fn();
+  const mockFormidable = vi.fn(() => ({
+    parse: mockFormParse,
+  }));
+  
+  return {
+    default: mockFormidable,
+    __mockFormParse: mockFormParse,
+    __mockFormidable: mockFormidable,
+  };
+});
 
 describe('Dossier API Endpoint Integration', () => {
-  let mockFormParse;
   let mockSendEmail;
   let mockGenerateAI;
+  let mockFormParse;
   let originalEnv;
 
   beforeEach(async () => {
@@ -35,11 +43,10 @@ describe('Dossier API Endpoint Integration', () => {
     mockGenerateAI = aiModule.generateAIContent;
     mockGenerateAI.mockClear();
     
-    mockFormParse = vi.fn();
-    formidable.mockClear();
-    formidable.mockReturnValue({
-      parse: mockFormParse,
-    });
+    const formidableModule = await import('formidable');
+    mockFormParse = formidableModule.__mockFormParse;
+    mockFormParse.mockClear();
+    formidableModule.__mockFormidable.mockClear();
     
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -271,17 +278,16 @@ describe('Dossier API Endpoint Integration', () => {
   });
 
   describe('AI Integration Tests', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       // Reset mocks for AI integration tests
       vi.clearAllMocks();
       process.env.GEMINI_API_KEY = 'test-api-key';
       
       // Re-setup formidable mock for AI tests
-      mockFormParse = vi.fn();
-      formidable.mockClear();
-      formidable.mockReturnValue({
-        parse: mockFormParse,
-      });
+      const formidableModule = await import('formidable');
+      mockFormParse = formidableModule.__mockFormParse;
+      mockFormParse.mockClear();
+      formidableModule.__mockFormidable.mockClear();
     });
 
     const aiTestFormData = {
