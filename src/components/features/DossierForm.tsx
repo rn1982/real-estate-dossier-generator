@@ -63,7 +63,7 @@ export const DossierForm: React.FC = () => {
         Formulaire de Soumission de Propriété
       </h1>
       
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-6">
         {/* Section 1: Agent Information */}
         <FormSection
           title="1. Informations de l'Agent"
@@ -539,7 +539,7 @@ export const DossierForm: React.FC = () => {
             type="button"
             size="lg"
             disabled={isSubmitting}
-            onClick={() => form.handleSubmit(handleGeneratePDF)()}
+            onClick={() => form.handleSubmit(handleGeneratePDF as any)()}
             className="min-w-[250px] relative bg-primary hover:bg-primary/90"
           >
             {isSubmitting ? (
