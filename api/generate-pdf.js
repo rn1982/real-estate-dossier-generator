@@ -396,7 +396,7 @@ export default async function handler(req, res) {
     
     // Add generation date if not provided
     if (!propertyData.generationDate) {
-      propertyData.generationDate = new Date().toLocaleDateString('fr-FR', {
+      propertyData.generationDate = new Date().toLocaleDateString('fr-CH', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -429,11 +429,12 @@ export default async function handler(req, res) {
       aiSocialContent: propertyData.aiSocialContent || {}
     };
     
-    // Helper function to format price
+    // Helper function to format price (Swiss format)
     function formatPrice(price) {
-      if (!price) return '0 €';
+      if (!price) return 'Prix sur demande';
       const numPrice = parseInt(price);
-      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(numPrice);
+      // Format with Swiss style: 665'000 CHF
+      return numPrice.toLocaleString('fr-CH').replace(/,/g, "'") + ' CHF';
     }
     
     // Generate HTML with customizations
