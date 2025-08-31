@@ -139,30 +139,30 @@ export const formatSwissDate = (date: Date): string => {
 // Convert FormData to PropertyData
 export const formDataToPropertyData = (formData: Record<string, unknown>): PropertyData => {
   return {
-    title: formData.propertyTitle,
-    type: formData.propertyType,
-    price: formatSwissPrice(formData.price),
+    title: String(formData.propertyTitle || ''),
+    type: String(formData.propertyType || ''),
+    price: formatSwissPrice(String(formData.price || 0)),
     location: {
-      address: formData.address,
-      city: formData.city,
-      postalCode: formData.postalCode,
-      canton: formData.canton,
+      address: String(formData.address || ''),
+      city: String(formData.city || ''),
+      postalCode: String(formData.postalCode || ''),
+      canton: String(formData.canton || ''),
     },
     details: {
-      rooms: formData.rooms,
-      bedrooms: formData.bedrooms,
-      bathrooms: formData.bathrooms,
-      livingSpace: formData.livingSpace,
-      plotSize: formData.plotSize,
-      yearBuilt: formData.yearBuilt,
-      floors: formData.floors,
+      rooms: String(formData.rooms || ''),
+      bedrooms: String(formData.bedrooms || ''),
+      bathrooms: String(formData.bathrooms || ''),
+      livingSpace: String(formData.livingSpace || ''),
+      plotSize: formData.plotSize ? String(formData.plotSize) : undefined,
+      yearBuilt: formData.yearBuilt ? String(formData.yearBuilt) : undefined,
+      floors: formData.floors ? String(formData.floors) : undefined,
     },
-    features: formData.features || [],
-    description: formData.description,
-    transports: formData.transports,
-    schools: formData.schools,
-    shops: formData.shops,
-    energyRating: formData.energyRating,
+    features: Array.isArray(formData.features) ? formData.features as string[] : [],
+    description: String(formData.description || ''),
+    transports: Array.isArray(formData.transports) ? formData.transports as string[] : undefined,
+    schools: Array.isArray(formData.schools) ? formData.schools as string[] : undefined,
+    shops: Array.isArray(formData.shops) ? formData.shops as string[] : undefined,
+    energyRating: formData.energyRating ? String(formData.energyRating) : undefined,
   };
 };
 
@@ -241,7 +241,9 @@ export const generatePDFDocument = async (
   customization?: Partial<PDFDocument['customization']>
 ): Promise<Blob> => {
   const propertyData = formDataToPropertyData(formData);
-  const processedPhotos = formData.photos ? await processPhotosForPDF(formData.photos) : [];
+  const processedPhotos = formData.photos && Array.isArray(formData.photos) 
+    ? await processPhotosForPDF(formData.photos as File[]) 
+    : [];
   
   const pdfDocument: PDFDocument = {
     template,
@@ -257,7 +259,7 @@ export const generatePDFDocument = async (
       },
     },
     photos: processedPhotos,
-    aiContent: formData.aiContent,
+    aiContent: formData.aiContent as AIContent | undefined,
   };
   
   // Select template component based on type
@@ -333,7 +335,7 @@ export const generateAndDownloadPDF = async (
     const url = URL.createObjectURL(pdfBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `dossier-${formData.propertyTitle.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.pdf`;
+    link.download = `dossier-${String(formData.propertyTitle || 'property').replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

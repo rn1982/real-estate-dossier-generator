@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import type { UseFormReturn, Path } from 'react-hook-form';
+import type { UseFormReturn, Path, PathValue } from 'react-hook-form';
 
 const STORAGE_KEY = 'dossier_form_draft';
 const STORAGE_EXPIRY_KEY = 'dossier_form_draft_expiry';
