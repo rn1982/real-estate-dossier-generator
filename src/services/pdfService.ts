@@ -21,7 +21,8 @@ interface PDFFormData {
   constructionYear?: string | number;
   propertyDescription?: string;
   keyPoints?: string;
-  photoUrls?: string[];
+  photos?: File[];  // Changed from photoUrls to match form data
+  photoUrls?: string[];  // Keep for backward compatibility
   agentName?: string;
   agentPhone?: string;
   agentEmail: string;
@@ -40,8 +41,38 @@ interface PDFFormData {
   [key: string]: unknown;
 }
 
+// Helper function to convert File to base64 data URL
+const fileToDataURL = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+// Helper function to convert logo to base64 if it's a File
+const processLogo = async (logo: string | File | undefined): Promise<string> => {
+  if (!logo) return '';
+  if (typeof logo === 'string') return logo;
+  return await fileToDataURL(logo);
+};
+
 export const generatePDF = async (formData: PDFFormData): Promise<Blob> => {
   const apiUrl = '/api/generate-pdf';
+  
+  // Convert photos from File[] to base64 data URLs (before try block for access in catch)
+  let photoDataUrls: string[] = [];
+  if (formData.photos && formData.photos.length > 0) {
+    photoDataUrls = await Promise.all(
+      formData.photos.map(photo => fileToDataURL(photo))
+    );
+  } else if (formData.photoUrls) {
+    photoDataUrls = formData.photoUrls;
+  }
+
+  // Convert logo to base64 if it's a File
+  const logoDataUrl = await processLogo(formData.pdfLogo);
   
   try {
     const response = await fetch(apiUrl, {
@@ -61,7 +92,7 @@ export const generatePDF = async (formData: PDFFormData): Promise<Blob> => {
           constructionYear: formData.constructionYear || '',
           description: formData.propertyDescription || '',
           highlights: formData.keyPoints ? formData.keyPoints.split(',').map((h: string) => h.trim()) : [],
-          photos: formData.photoUrls || [],
+          photos: photoDataUrls,  // Use converted photo URLs
           agentName: formData.agentName || '',
           agentPhone: formData.agentPhone || '',
           agentEmail: formData.agentEmail,
@@ -74,7 +105,7 @@ export const generatePDF = async (formData: PDFFormData): Promise<Blob> => {
             secondary: formData.pdfColorSecondary,
             accent: formData.pdfColorAccent,
           },
-          logo: formData.pdfLogo || '',
+          logo: logoDataUrl,  // Use converted logo URL
           layout: {
             photoStyle: formData.pdfPhotoLayout || 'grid',
             photoColumns: formData.pdfPhotoColumns || 2,
@@ -126,6 +157,42 @@ export const generatePDF = async (formData: PDFFormData): Promise<Blob> => {
     return pdfBlob;
     
   } catch (error) {
+    console.error('Server PDF generation failed:', error);
+    
+    // Try client-side fallback for specific error conditions
+    const shouldFallback = 
+      (error instanceof PDFServiceError && 
+        (error.status === 504 || error.status === 500 || error.code === 'NETWORK_ERROR')) ||
+      (error instanceof TypeError && error.message.includes('fetch'));
+    
+    if (shouldFallback) {
+      console.log('Attempting client-side PDF generation as fallback...');
+      try {
+        // Dynamic import to avoid loading the client PDF service unless needed
+        const { generatePDFClient } = await import('./clientPdfService');
+        
+        // Create a temporary div with the property data
+        const tempDiv = document.createElement('div');
+        tempDiv.id = 'temp-pdf-fallback';
+        tempDiv.style.cssText = 'position: absolute; left: -9999px; width: 800px;';
+        tempDiv.innerHTML = await createHTMLContent(formData, photoDataUrls, logoDataUrl);
+        document.body.appendChild(tempDiv);
+        
+        // Generate PDF client-side
+        await generatePDFClient('temp-pdf-fallback', 
+          `dossier-${formData.address?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'property'}.pdf`);
+        
+        // Clean up
+        document.body.removeChild(tempDiv);
+        
+        // Return empty blob since client-side generation handles download
+        return new Blob();
+      } catch (fallbackError) {
+        console.error('Client-side fallback also failed:', fallbackError);
+        // Continue to throw original error
+      }
+    }
+    
     // Handle network errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new PDFServiceError(
@@ -147,6 +214,75 @@ export const generatePDF = async (formData: PDFFormData): Promise<Blob> => {
       undefined
     );
   }
+};
+
+// Helper function to create HTML content for client-side fallback
+const createHTMLContent = async (
+  formData: PDFFormData, 
+  photoUrls: string[], 
+  logoUrl: string
+): Promise<string> => {
+  const primaryColor = formData.pdfColorPrimary || '#2563eb';
+  const secondaryColor = formData.pdfColorSecondary || '#1e40af';
+  
+  const photosHtml = photoUrls.length > 0 ? `
+    <div class="photos-section">
+      <h2>Galerie Photos</h2>
+      <div class="photos-grid" style="display: grid; grid-template-columns: repeat(${formData.pdfPhotoColumns || 2}, 1fr); gap: 10px;">
+        ${photoUrls.map(url => `<img src="${url}" style="width: 100%; height: auto; border-radius: 8px;" />`).join('')}
+      </div>
+    </div>
+  ` : '';
+  
+  return `
+    <div style="font-family: Arial, sans-serif; padding: 20px; background: white;">
+      ${logoUrl ? `<img src="${logoUrl}" style="max-width: 200px; margin-bottom: 20px;" />` : ''}
+      
+      <h1 style="color: ${primaryColor}; margin-bottom: 10px;">${formData.propertyType || 'Propriété'}</h1>
+      <h2 style="color: ${secondaryColor}; margin-bottom: 20px;">${formData.address || ''}</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 30px 0;">
+        <div style="text-align: center;">
+          <div style="font-size: 24px; color: ${primaryColor}; font-weight: bold;">${formData.price || ''}</div>
+          <div style="color: #666;">PRIX</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 24px; color: ${primaryColor}; font-weight: bold;">${formData.livingArea || ''} m²</div>
+          <div style="color: #666;">SURFACE</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 24px; color: ${primaryColor}; font-weight: bold;">${formData.roomCount || ''}</div>
+          <div style="color: #666;">PIÈCES</div>
+        </div>
+      </div>
+      
+      ${formData.propertyDescription ? `
+        <div style="margin: 30px 0;">
+          <h3 style="color: ${primaryColor}; margin-bottom: 10px;">Description</h3>
+          <p style="line-height: 1.6;">${formData.propertyDescription}</p>
+        </div>
+      ` : ''}
+      
+      ${formData.keyPoints ? `
+        <div style="margin: 30px 0;">
+          <h3 style="color: ${primaryColor}; margin-bottom: 10px;">Points Clés</h3>
+          <ul style="line-height: 1.6;">
+            ${formData.keyPoints.split(',').map(point => `<li>${point.trim()}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+      
+      ${photosHtml}
+      
+      <div style="margin-top: 40px; padding: 20px; background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); color: white; border-radius: 10px;">
+        <h3 style="margin-bottom: 10px;">Votre Contact</h3>
+        <div>${formData.agentName || ''}</div>
+        <div>${formData.agentEmail}</div>
+        <div>${formData.agentPhone || ''}</div>
+        <div>${formData.agencyName || ''}</div>
+      </div>
+    </div>
+  `;
 };
 
 // Helper function to download the PDF
