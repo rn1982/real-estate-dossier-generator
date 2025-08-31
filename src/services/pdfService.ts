@@ -90,9 +90,11 @@ const processLogo = async (logo: string | File | undefined): Promise<string> => 
   return await fileToDataURL(logo);
 };
 
-export const generatePDF = async (formData: PDFFormData): Promise<Blob> => {
-  const apiUrl = '/api/generate-pdf';
-  
+export const generatePDF = async (
+  formData: PDFFormData, 
+  useServerSide: boolean = false,
+  onProgress?: (progress: number) => void
+): Promise<Blob> => {
   // Convert photos from File[] to base64 data URLs (before try block for access in catch)
   let photoDataUrls: string[] = [];
   if (formData.photos && formData.photos.length > 0) {
@@ -105,6 +107,67 @@ export const generatePDF = async (formData: PDFFormData): Promise<Blob> => {
 
   // Convert logo to base64 if it's a File
   const logoDataUrl = await processLogo(formData.pdfLogo);
+  
+  // Use React-PDF for direct downloads (client-side)
+  if (!useServerSide) {
+    try {
+      const { generateAndDownloadPDF } = await import('./reactPdfService');
+      
+      // Convert PDFFormData to the format expected by React-PDF service
+      const reactPdfFormData = {
+        propertyTitle: formData.propertyType || 'Propriété',
+        propertyType: formData.propertyType || '',
+        address: formData.address || '',
+        city: formData.address?.split(',')[1]?.trim() || '',
+        postalCode: formData.address?.match(/\d{4}/)?.[0] || '',
+        canton: 'Genève', // Default canton
+        price: formData.price || '',
+        rooms: String(formData.roomCount || ''),
+        bedrooms: String(formData.bedrooms || ''),
+        bathrooms: String(formData.bathrooms || ''),
+        livingSpace: String(formData.livingArea || ''),
+        yearBuilt: String(formData.constructionYear || ''),
+        description: formData.propertyDescription || '',
+        features: formData.keyPoints ? formData.keyPoints.split(',').map((f: string) => f.trim()) : [],
+        photos: formData.photos || [],
+        aiContent: formData.aiContent,
+        agentName: formData.agentName,
+        agentEmail: formData.agentEmail,
+        agentPhone: formData.agentPhone,
+        agencyName: formData.agencyName,
+      };
+      
+      const template = (formData.pdfTemplate || 'modern') as 'modern' | 'classic' | 'luxury';
+      
+      const customization = {
+        colors: {
+          primary: formData.pdfColorPrimary || '#3B82F6',
+          secondary: formData.pdfColorSecondary || '#10B981',
+          accent: formData.pdfColorAccent || '#F59E0B',
+          text: '#1F2937',
+          background: '#FFFFFF',
+        },
+        logo: logoDataUrl,
+        layout: {
+          photoLayout: (formData.pdfPhotoLayout || 'grid') as 'grid' | 'list' | 'carousel',
+          columns: (formData.pdfPhotoColumns || 2) as 1 | 2 | 3,
+          showMap: false,
+          showAmenities: formData.pdfShowAI !== false,
+        },
+      };
+      
+      await generateAndDownloadPDF(reactPdfFormData, template, customization, onProgress);
+      
+      // Return empty blob since React-PDF handles the download
+      return new Blob();
+    } catch (error) {
+      console.error('React-PDF generation failed, falling back to server:', error);
+      // Fall through to server-side generation
+    }
+  }
+  
+  // Server-side generation (for email attachments or if client-side fails)
+  const apiUrl = '/api/generate-pdf';
   
   try {
     const response = await fetch(apiUrl, {

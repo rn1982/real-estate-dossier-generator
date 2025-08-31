@@ -19,7 +19,7 @@ import {
 } from '@/types/dossierForm';
 
 export const DossierForm: React.FC = () => {
-  const { form, handleSubmit, handleGeneratePDF, isSubmitting, clearFormAndStorage } = useDossierForm();
+  const { form, handleSubmit, handleGeneratePDF, isSubmitting, clearFormAndStorage, pdfProgress } = useDossierForm();
   const {
     register,
     control,
@@ -520,7 +520,7 @@ export const DossierForm: React.FC = () => {
             {isSubmitting ? (
               <>
                 <LoadingSpinner size="sm" className="mr-2" />
-                Génération en cours...
+                {pdfProgress > 0 ? `Génération: ${pdfProgress}%` : 'Génération en cours...'}
               </>
             ) : (
               <>

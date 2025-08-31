@@ -12,6 +12,7 @@ export const useDossierForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState(0);
   
   const form = useForm<DossierFormValues>({
     resolver: zodResolver(dossierFormSchema) as any,
@@ -130,6 +131,7 @@ export const useDossierForm = () => {
   const handleGeneratePDF = async (data: DossierFormValues) => {
     setIsSubmitting(true);
     setSubmitError(null);
+    setPdfProgress(0);
     
     try {
       // Show loading toast
@@ -140,8 +142,10 @@ export const useDossierForm = () => {
         duration: 0, // Keep showing until dismissed
       });
       
-      // Generate PDF
-      const pdfBlob = await generatePDF(data);
+      // Generate PDF with progress callback
+      const pdfBlob = await generatePDF(data, false, (progress: number) => {
+        setPdfProgress(progress);
+      });
       
       // Download the PDF
       downloadPDF(pdfBlob, `dossier-${data.address?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'property'}.pdf`);
@@ -172,6 +176,7 @@ export const useDossierForm = () => {
       });
     } finally {
       setIsSubmitting(false);
+      setPdfProgress(0);
     }
   };
 
@@ -183,5 +188,6 @@ export const useDossierForm = () => {
     submitError,
     submitSuccess,
     clearFormAndStorage,
+    pdfProgress,
   };
 };
