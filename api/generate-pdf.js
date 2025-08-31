@@ -430,12 +430,12 @@ export default async function handler(req, res) {
     };
     
     // Helper function to format price (Swiss format)
-    function formatPrice(price) {
+    const formatPrice = (price) => {
       if (!price) return 'Prix sur demande';
       const numPrice = parseInt(price);
       // Format with Swiss style: 665'000 CHF
       return numPrice.toLocaleString('fr-CH').replace(/,/g, "'") + ' CHF';
-    }
+    };
     
     // Generate HTML with customizations
     const htmlStartTime = Date.now();

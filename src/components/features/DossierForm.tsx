@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Controller } from 'react-hook-form';
 import { FormSection } from './FormSection';
 import { Input } from '@/components/ui/Input';
@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { TemplatePreview } from './TemplatePreview';
+import { ReactPDFPreview } from './ReactPDFPreview';
 import { useDossierForm } from '@/hooks/useDossierForm';
 import { 
   propertyTypeOptions, 
@@ -39,6 +40,22 @@ export const DossierForm: React.FC = () => {
   const pdfShowAgent = watch('pdfShowAgent');
   const pdfShowSocial = watch('pdfShowSocial');
   const pdfShowAI = watch('pdfShowAI');
+  const pdfLogo = watch('pdfLogo');
+  
+  // Create logo URL with proper cleanup
+  const logoUrl = useMemo(() => {
+    if (!pdfLogo || !(pdfLogo instanceof File)) return undefined;
+    return URL.createObjectURL(pdfLogo);
+  }, [pdfLogo]);
+  
+  // Cleanup logo URL on unmount or change
+  React.useEffect(() => {
+    return () => {
+      if (logoUrl) {
+        URL.revokeObjectURL(logoUrl);
+      }
+    };
+  }, [logoUrl]);
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 lg:p-8">
@@ -46,7 +63,7 @@ export const DossierForm: React.FC = () => {
         Formulaire de Soumission de Propriété
       </h1>
       
-      <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         {/* Section 1: Agent Information */}
         <FormSection
           title="1. Informations de l'Agent"
@@ -484,7 +501,7 @@ export const DossierForm: React.FC = () => {
               </div>
             </div>
             
-            <div className="pt-4">
+            <div className="pt-4 flex gap-4">
               <TemplatePreview
                 template={pdfTemplate}
                 colors={pdfColors}
@@ -492,6 +509,14 @@ export const DossierForm: React.FC = () => {
                 photoColumns={pdfPhotoColumns}
                 showAgent={pdfShowAgent}
                 showSocial={pdfShowSocial}
+                showAI={pdfShowAI}
+              />
+              <ReactPDFPreview
+                template={pdfTemplate as 'modern' | 'classic' | 'luxury'}
+                colors={pdfColors}
+                logo={logoUrl}
+                photoLayout={pdfPhotoLayout as 'grid' | 'list' | 'carousel'}
+                photoColumns={pdfPhotoColumns as 1 | 2 | 3}
                 showAI={pdfShowAI}
               />
             </div>
@@ -514,7 +539,7 @@ export const DossierForm: React.FC = () => {
             type="button"
             size="lg"
             disabled={isSubmitting}
-            onClick={() => form.handleSubmit(handleGeneratePDF as any)()}
+            onClick={() => form.handleSubmit(handleGeneratePDF)()}
             className="min-w-[250px] relative bg-primary hover:bg-primary/90"
           >
             {isSubmitting ? (

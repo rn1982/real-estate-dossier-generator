@@ -76,7 +76,7 @@ export const useFormPersistence = <T extends Record<string, unknown> = Record<st
         // Restore each field individually
         Object.keys(data).forEach((key) => {
           if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
-            setValue(key as Path<T>, data[key] as any);
+            setValue(key as Path<T>, data[key] as PathValue<T, Path<T>>);
           }
         });
         

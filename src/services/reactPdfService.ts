@@ -137,7 +137,7 @@ export const formatSwissDate = (date: Date): string => {
 // });
 
 // Convert FormData to PropertyData
-export const formDataToPropertyData = (formData: any): PropertyData => {
+export const formDataToPropertyData = (formData: Record<string, unknown>): PropertyData => {
   return {
     title: formData.propertyTitle,
     type: formData.propertyType,
@@ -236,7 +236,7 @@ const getImageDimensions = (url: string): Promise<{ width: number; height: numbe
 
 // Main PDF generation function
 export const generatePDFDocument = async (
-  formData: any,
+  formData: Record<string, unknown>,
   template: 'modern' | 'classic' | 'luxury' = 'modern',
   customization?: Partial<PDFDocument['customization']>
 ): Promise<Blob> => {
@@ -279,7 +279,7 @@ export const generatePDFDocument = async (
   // Generate PDF blob
   // Create the document element
   const documentElement = React.createElement(TemplateComponent, { document: pdfDocument });
-  const pdfBlob = await pdf(documentElement as any).toBlob();
+  const pdfBlob = await pdf(documentElement as React.ReactElement).toBlob();
   
   return pdfBlob;
 };
@@ -317,7 +317,7 @@ const getDefaultColors = (template: string): ColorScheme => {
 
 // Generate and download PDF
 export const generateAndDownloadPDF = async (
-  formData: any,
+  formData: Record<string, unknown>,
   template: 'modern' | 'classic' | 'luxury' = 'modern',
   customization?: Partial<PDFDocument['customization']>,
   onProgress?: (progress: number) => void

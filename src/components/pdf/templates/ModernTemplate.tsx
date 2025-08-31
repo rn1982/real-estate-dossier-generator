@@ -198,6 +198,18 @@ const styles = StyleSheet.create({
     color: '#78350F',
     lineHeight: 1.5,
   },
+  logoContainer: {
+    position: 'absolute',
+    top: 30,
+    right: 40,
+    width: 120,
+    height: 60,
+  },
+  logo: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+  },
 });
 
 interface ModernTemplateProps {
@@ -224,6 +236,12 @@ const ModernTemplate: React.FC<ModernTemplateProps> = ({ document }) => {
     <Document>
       {/* Cover Page */}
       <Page size="A4" style={styles.page}>
+        {customization.logo && (
+          <View style={styles.logoContainer}>
+            <Image style={styles.logo} src={customization.logo} />
+          </View>
+        )}
+        
         <View style={styles.coverPage}>
           {photos[0] && (
             <Image style={styles.heroImage} src={photos[0].url} />

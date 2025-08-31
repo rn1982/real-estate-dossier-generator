@@ -4,30 +4,27 @@ import handler from '../dossier.js';
 
 vi.mock('../emailService.js', () => ({
   sendConfirmationEmail: vi.fn(),
-  validateEmail: vi.fn().mockReturnValue(true),
+  validateEmail: vi.fn(() => true),
 }));
 
 vi.mock('../aiServiceGemini.js', () => ({
   generateAIContent: vi.fn(),
 }));
 
+// Create a shared mock parse function
+const mockFormParse = vi.fn();
+
 vi.mock('formidable', () => {
-  const mockFormParse = vi.fn();
-  const mockFormidable = vi.fn(() => ({
-    parse: mockFormParse,
-  }));
-  
   return {
-    default: mockFormidable,
-    __mockFormParse: mockFormParse,
-    __mockFormidable: mockFormidable,
+    default: vi.fn(() => ({
+      parse: mockFormParse,
+    })),
   };
 });
 
 describe('Dossier API Endpoint Integration', () => {
   let mockSendEmail;
   let mockGenerateAI;
-  let mockFormParse;
   let originalEnv;
 
   beforeEach(async () => {
@@ -43,10 +40,8 @@ describe('Dossier API Endpoint Integration', () => {
     mockGenerateAI = aiModule.generateAIContent;
     mockGenerateAI.mockClear();
     
-    const formidableModule = await import('formidable');
-    mockFormParse = formidableModule.__mockFormParse;
+    // Clear the shared mockFormParse
     mockFormParse.mockClear();
-    formidableModule.__mockFormidable.mockClear();
     
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -137,6 +132,7 @@ describe('Dossier API Endpoint Integration', () => {
       await handler(req, res);
 
       if (res._getStatusCode() !== 201) {
+        console.log('Test failed with status:', res._getStatusCode());
         console.log('Test failed with response:', res._getData());
       }
 
@@ -283,11 +279,8 @@ describe('Dossier API Endpoint Integration', () => {
       vi.clearAllMocks();
       process.env.GEMINI_API_KEY = 'test-api-key';
       
-      // Re-setup formidable mock for AI tests
-      const formidableModule = await import('formidable');
-      mockFormParse = formidableModule.__mockFormParse;
+      // Clear the shared mockFormParse for AI tests
       mockFormParse.mockClear();
-      formidableModule.__mockFormidable.mockClear();
     });
 
     const aiTestFormData = {

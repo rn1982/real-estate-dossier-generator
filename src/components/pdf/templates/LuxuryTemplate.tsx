@@ -237,6 +237,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 1,
   },
+  logoContainer: {
+    position: 'absolute',
+    top: 50,
+    right: 60,
+    width: 140,
+    height: 70,
+  },
+  logo: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+  },
 });
 
 interface LuxuryTemplateProps {
@@ -275,6 +287,12 @@ const LuxuryTemplate: React.FC<LuxuryTemplateProps> = ({ document }) => {
 
       {/* Details Page - Refined Information */}
       <Page size="A4" style={styles.page}>
+        {customization.logo && (
+          <View style={styles.logoContainer}>
+            <Image style={styles.logo} src={customization.logo} />
+          </View>
+        )}
+        
         {property.energyRating && (
           <View style={styles.energyBadgeLuxury}>
             <Text>CLASSE {property.energyRating}</Text>

@@ -83,7 +83,7 @@ describe('sentry configuration', () => {
       init()
 
       // Get the beforeSend function from the call
-      const initCall = (Sentry.init as any).mock.calls[0][0]
+      const initCall = (Sentry.init as jest.Mock).mock.calls[0][0]
       const beforeSend = initCall.beforeSend
 
       // Test filtering of cookies
@@ -113,7 +113,7 @@ describe('sentry configuration', () => {
       const { initSentry: init } = await import('./sentry')
       init()
 
-      const initCall = (Sentry.init as any).mock.calls[0][0]
+      const initCall = (Sentry.init as jest.Mock).mock.calls[0][0]
       const beforeSend = initCall.beforeSend
 
       const event = { message: 'test error' }

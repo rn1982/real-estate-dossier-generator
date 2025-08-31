@@ -201,6 +201,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#34495E',
   },
+  logoContainer: {
+    position: 'absolute',
+    top: 40,
+    right: 50,
+    width: 100,
+    height: 50,
+  },
+  logo: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+  },
 });
 
 interface ClassicTemplateProps {
@@ -214,6 +226,12 @@ const ClassicTemplate: React.FC<ClassicTemplateProps> = ({ document }) => {
     <Document>
       {/* First Page - Overview */}
       <Page size="A4" style={styles.page}>
+        {customization.logo && (
+          <View style={styles.logoContainer}>
+            <Image style={styles.logo} src={customization.logo} />
+          </View>
+        )}
+        
         {property.energyRating && (
           <View style={styles.energyLabel}>
             <Text>Classe {property.energyRating}</Text>

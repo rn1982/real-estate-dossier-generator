@@ -186,7 +186,7 @@ describe('ErrorBoundary', () => {
 
     // Mock the Sentry ErrorBoundary behavior for async errors
     let errorCaught = false
-    ;(SentryReact.ErrorBoundary as any).mockImplementation(({ fallback, children }: any) => {
+    ;(SentryReact.ErrorBoundary as jest.Mock).mockImplementation(({ fallback, children }: { fallback: React.ReactNode; children: React.ReactNode }) => {
       // Simulate catching async error
       if (!errorCaught) {
         errorCaught = true
