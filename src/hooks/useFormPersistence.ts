@@ -1,17 +1,17 @@
 import { useEffect, useCallback } from 'react';
-import type { UseFormReturn, Path, PathValue } from 'react-hook-form';
+import type { UseFormReturn, Path, PathValue, FieldValues } from 'react-hook-form';
 
 const STORAGE_KEY = 'dossier_form_draft';
 const STORAGE_EXPIRY_KEY = 'dossier_form_draft_expiry';
 const EXPIRY_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-interface StoredFormData<T = Record<string, unknown>> {
-  data: T;
+interface StoredFormData<TFieldValues extends FieldValues> {
+  data: Partial<TFieldValues>;
   timestamp: number;
 }
 
-export const useFormPersistence = <T extends Record<string, unknown> = Record<string, unknown>>(
-  form: UseFormReturn<T>,
+export const useFormPersistence = <TFieldValues extends FieldValues>(
+  form: UseFormReturn<TFieldValues>,
   isSubmitting: boolean,
   submitSuccess: boolean
 ) => {
@@ -25,12 +25,12 @@ export const useFormPersistence = <T extends Record<string, unknown> = Record<st
 
     const subscription = watch((data) => {
       // Don't save photos to localStorage (too large and not necessary)
-      const dataToStore = { ...data };
+      const dataToStore: Partial<TFieldValues> = { ...data };
       if ('photos' in dataToStore) {
         delete dataToStore.photos;
       }
 
-      const storageData: StoredFormData<typeof dataToStore> = {
+      const storageData: StoredFormData<TFieldValues> = {
         data: dataToStore,
         timestamp: Date.now(),
       };
@@ -71,12 +71,13 @@ export const useFormPersistence = <T extends Record<string, unknown> = Record<st
           return;
         }
 
-        const { data }: StoredFormData<T> = JSON.parse(storedData);
-        
+        const { data }: StoredFormData<TFieldValues> = JSON.parse(storedData);
+
         // Restore each field individually
-        Object.keys(data).forEach((key) => {
-          if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
-            setValue(key as Path<T>, data[key] as PathValue<T, Path<T>>);
+        (Object.keys(data) as Array<keyof typeof data>).forEach((key) => {
+          const value = data[key];
+          if (value !== undefined && value !== null && value !== '') {
+            setValue(key as Path<TFieldValues>, value as PathValue<TFieldValues, Path<TFieldValues>>);
           }
         });
         

@@ -14,9 +14,9 @@ export const config = {
 
 async function handler(req, res) {
   console.log('Dossier API called with method:', req.method);
-  // Set CORS headers with origin validation
-  // Set CORS headers - allow all origins for now since it's a public API
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Set CORS headers with origin validation driven by environment configuration
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:5173';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
@@ -29,7 +29,7 @@ async function handler(req, res) {
 
   // Only accept POST requests
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Méthode non autorisée' });
+    res.status(405).json({ error: 'Method not allowed' });
     return;
   }
 
@@ -58,11 +58,20 @@ async function handler(req, res) {
       [fields, files] = await form.parse(req);
     } catch (parseError) {
       console.error('Form parsing error:', parseError);
-      if (parseError.httpCode) {
-        res.status(parseError.httpCode).json({ error: parseError.message });
-      } else {
-        res.status(400).json({ error: 'Échec de l\'analyse des données du formulaire' });
+      if (parseError.code === 'LIMIT_FILE_SIZE') {
+        res.status(413).json({ error: 'File size exceeds maximum allowed (10MB)' });
+        return;
       }
+      if (parseError.code === 'LIMIT_FILE_COUNT') {
+        res.status(413).json({ error: 'Too many files. Maximum 20 files allowed.' });
+        return;
+      }
+      if (parseError.code === 'LIMIT_UNEXPECTED_FILE') {
+        res.status(400).json({ error: 'Unexpected file field' });
+        return;
+      }
+
+      res.status(500).json({ error: 'Internal server error' });
       return;
     }
 
@@ -79,9 +88,9 @@ async function handler(req, res) {
     }
 
     if (missingFields.length > 0) {
-      res.status(400).json({ 
-        error: 'Champs obligatoires manquants', 
-        missingFields 
+      res.status(400).json({
+        error: 'Missing required fields',
+        missingFields,
       });
       return;
     }
@@ -92,6 +101,11 @@ async function handler(req, res) {
       return Array.isArray(value) ? value[0] : value;
     };
 
+    const optionalValue = (field) => {
+      const value = getValue(field);
+      return value === undefined || value === '' ? null : value;
+    };
+
     const formData = {
       agentEmail: getValue('agentEmail'),
       propertyType: getValue('propertyType'),
@@ -99,33 +113,47 @@ async function handler(req, res) {
       propertyLocation: getValue('propertyLocation') || getValue('address'),
       price: getValue('price'),
       targetBuyer: getValue('targetBuyer'),
-      roomCount: getValue('roomCount') || '0',
-      bedroomCount: getValue('bedroomCount') || '0',
-      bathroomCount: getValue('bathroomCount') || '0',
-      livingArea: getValue('livingArea') || '0',
-      landArea: getValue('landArea') || null,
-      yearBuilt: getValue('constructionYear') || null,
+      roomCount: optionalValue('roomCount'),
+      bedroomCount: optionalValue('bedroomCount'),
+      bathroomCount: optionalValue('bathroomCount'),
+      livingArea: optionalValue('livingArea'),
+      landArea: optionalValue('landArea'),
+      yearBuilt: optionalValue('constructionYear'),
       hasGarage: getValue('hasGarage') === 'true',
       hasGarden: getValue('hasGarden') === 'true',
       hasPool: getValue('hasPool') === 'true',
       hasBalcony: getValue('hasBalcony') === 'true',
-      heatingType: getValue('heatingType') || 'Non spécifié',
-      energyClass: getValue('energyClass') || 'D',
-      ghgClass: getValue('ghgClass') || 'D',
+      heatingType: optionalValue('heatingType'),
+      energyClass: optionalValue('energyClass'),
+      ghgClass: optionalValue('ghgClass'),
       features: getValue('features') ? getValue('features').split(',').map(f => f.trim()) : [],
-      sellingPoints: getValue('keyPoints') || null,
+      keyPoints: optionalValue('keyPoints'),
+      propertyDescription: optionalValue('propertyDescription'),
     };
 
-    // Validate target buyer enum (propertyType validation handled by AI service)
+    const validPropertyTypes = ['appartement', 'maison'];
+    if (!validPropertyTypes.includes(formData.propertyType)) {
+      res.status(400).json({
+        error: 'Invalid property type',
+        validTypes: validPropertyTypes,
+      });
+      return;
+    }
+
     const validTargetBuyers = [
       'jeune_famille',
-      'jeune_actif',
+      'professionnel',
+      'investisseur',
       'retraite',
-      'investisseur'
+      'premier_acheteur',
+      'famille_multigenerationnelle',
     ];
     if (!validTargetBuyers.includes(formData.targetBuyer)) {
-      // Use default if invalid
-      formData.targetBuyer = 'jeune_famille';
+      res.status(400).json({
+        error: 'Invalid target buyer',
+        validTypes: validTargetBuyers,
+      });
+      return;
     }
 
     // Process file metadata
@@ -136,8 +164,8 @@ async function handler(req, res) {
         // Validate file mimetype again for security
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
         if (!allowedTypes.includes(file.mimetype)) {
-          res.status(415).json({ 
-            error: 'Type de fichier non supporté',
+          res.status(415).json({
+            error: 'Unsupported media type',
             file: file.originalFilename,
             allowedTypes 
           });
@@ -154,9 +182,9 @@ async function handler(req, res) {
 
     // Validate email format
     if (!validateEmail(formData.agentEmail)) {
-      res.status(400).json({ 
-        error: 'Format d\'email invalide',
-        email: formData.agentEmail
+      res.status(400).json({
+        error: 'Invalid email format',
+        email: formData.agentEmail,
       });
       return;
     }
@@ -225,7 +253,7 @@ async function handler(req, res) {
 
     // Return success response
     res.status(201).json({
-      message: 'Dossier reçu avec succès',
+      message: 'Dossier successfully received',
       timestamp: new Date().toISOString(),
       data: {
         agentEmail: formData.agentEmail,
@@ -234,6 +262,11 @@ async function handler(req, res) {
         price: formData.price,
         targetBuyer: formData.targetBuyer,
         photoCount: photoMetadata.length,
+        roomCount: formData.roomCount,
+        livingArea: formData.livingArea,
+        constructionYear: formData.yearBuilt,
+        keyPoints: formData.keyPoints,
+        propertyDescription: formData.propertyDescription,
       },
       aiContent,
       emailSent: emailResult.success,
@@ -258,22 +291,22 @@ async function handler(req, res) {
 
     // Handle specific formidable errors
     if (error.code === 'LIMIT_FILE_SIZE') {
-      res.status(413).json({ error: 'La taille du fichier dépasse le maximum autorisé (10 Mo)' });
+      res.status(413).json({ error: 'File size exceeds maximum allowed (10MB)' });
       return;
     }
     if (error.code === 'LIMIT_FILE_COUNT') {
-      res.status(413).json({ error: 'Trop de fichiers. Maximum 20 fichiers autorisés.' });
+      res.status(413).json({ error: 'Too many files. Maximum 20 files allowed.' });
       return;
     }
     if (error.code === 'LIMIT_UNEXPECTED_FILE') {
-      res.status(400).json({ error: 'Champ de fichier inattendu' });
+      res.status(400).json({ error: 'Unexpected file field' });
       return;
     }
 
     // Generic error response with more details in development
-    const errorMessage = process.env.NODE_ENV === 'development' 
+    const errorMessage = process.env.NODE_ENV === 'development'
       ? `Internal server error: ${error.message}`
-      : 'Erreur interne du serveur';
+      : 'Internal server error';
     res.status(500).json({ error: errorMessage });
   }
 }

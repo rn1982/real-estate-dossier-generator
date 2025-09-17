@@ -4,7 +4,7 @@ import { dossierFormSchema, type DossierFormValues } from '@/types/dossierForm';
 import { useState } from 'react';
 import { submitDossierWithRetry, DossierServiceError } from '@/services/dossierService';
 import { generatePDF, downloadPDF, PDFServiceError } from '@/services/pdfService';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast';
 import { useFormPersistence } from './useFormPersistence';
 
 export const useDossierForm = () => {
@@ -15,7 +15,7 @@ export const useDossierForm = () => {
   const [pdfProgress, setPdfProgress] = useState(0);
   
   const form = useForm<DossierFormValues>({
-    resolver: zodResolver(dossierFormSchema) as any,
+    resolver: zodResolver(dossierFormSchema),
     mode: 'onChange', // Enable real-time validation
     reValidateMode: 'onChange', // Revalidate on every change
     delayError: 500, // Debounce validation errors by 500ms
@@ -36,7 +36,7 @@ export const useDossierForm = () => {
   });
 
   // Add form persistence
-  const { clearFormAndStorage } = useFormPersistence(form as any, isSubmitting, submitSuccess);
+  const { clearFormAndStorage } = useFormPersistence(form, isSubmitting, submitSuccess);
 
   const handleSubmit = async (data: DossierFormValues) => {
     setIsSubmitting(true);
