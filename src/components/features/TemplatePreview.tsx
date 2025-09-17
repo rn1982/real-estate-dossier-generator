@@ -60,24 +60,42 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const templateStyle = TEMPLATE_STYLES[template as keyof typeof TEMPLATE_STYLES] || TEMPLATE_STYLES.modern;
-  const finalColors = {
-    primary: colors.primary || templateStyle.defaultColors.primary,
-    secondary: colors.secondary || templateStyle.defaultColors.secondary,
-    accent: colors.accent || templateStyle.defaultColors.accent,
-  };
+  const { primary, secondary, accent } = colors;
+  const finalColors = useMemo(
+    () => ({
+      primary: primary || templateStyle.defaultColors.primary,
+      secondary: secondary || templateStyle.defaultColors.secondary,
+      accent: accent || templateStyle.defaultColors.accent,
+    }),
+    [primary, secondary, accent, templateStyle]
+  );
 
   // Generate cache key based on all preview parameters
   const cacheKey = useMemo(() => {
     return JSON.stringify({
       template,
-      colors: finalColors,
+      colors: {
+        primary: finalColors.primary,
+        secondary: finalColors.secondary,
+        accent: finalColors.accent,
+      },
       photoLayout,
       photoColumns,
       showAgent,
       showSocial,
       showAI,
     });
-  }, [template, finalColors, photoLayout, photoColumns, showAgent, showSocial, showAI]);
+  }, [
+    template,
+    finalColors.primary,
+    finalColors.secondary,
+    finalColors.accent,
+    photoLayout,
+    photoColumns,
+    showAgent,
+    showSocial,
+    showAI,
+  ]);
 
   // Memoize the preview content
   const previewContent = useMemo(() => {

@@ -78,6 +78,7 @@ export const dossierFormSchema = z.object({
   pdfShowAI: z.boolean().optional().default(true),
 });
 
+export type DossierFormInput = z.input<typeof dossierFormSchema>;
 export type DossierFormValues = z.infer<typeof dossierFormSchema>;
 
 export const propertyTypeOptions = [

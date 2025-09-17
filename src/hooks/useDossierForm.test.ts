@@ -15,7 +15,7 @@ vi.mock('@/services/dossierService', () => ({
 }));
 
 // Mock toast context
-vi.mock('@/contexts/ToastContext', () => ({
+vi.mock('@/contexts/useToast', () => ({
   useToast: () => ({
     toast: vi.fn(),
   }),

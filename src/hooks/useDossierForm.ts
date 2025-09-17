@@ -1,21 +1,32 @@
-import { useForm } from 'react-hook-form';
+import { useForm, type SubmitHandler, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { dossierFormSchema, type DossierFormValues } from '@/types/dossierForm';
+import { dossierFormSchema, type DossierFormInput, type DossierFormValues } from '@/types/dossierForm';
 import { useState } from 'react';
 import { submitDossierWithRetry, DossierServiceError } from '@/services/dossierService';
 import { generatePDF, downloadPDF, PDFServiceError } from '@/services/pdfService';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast';
 import { useFormPersistence } from './useFormPersistence';
 
-export const useDossierForm = () => {
+interface UseDossierFormResult {
+  form: UseFormReturn<DossierFormInput, any, DossierFormValues>;
+  submitDossier: SubmitHandler<DossierFormValues>;
+  handleGeneratePDF: SubmitHandler<DossierFormValues>;
+  isSubmitting: boolean;
+  submitError: string | null;
+  submitSuccess: boolean;
+  clearFormAndStorage: () => void;
+  pdfProgress: number;
+}
+
+export const useDossierForm = (): UseDossierFormResult => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
   
-  const form = useForm<DossierFormValues>({
-    resolver: zodResolver(dossierFormSchema) as any,
+  const form = useForm<DossierFormInput, any, DossierFormValues>({
+    resolver: zodResolver(dossierFormSchema),
     mode: 'onChange', // Enable real-time validation
     reValidateMode: 'onChange', // Revalidate on every change
     delayError: 500, // Debounce validation errors by 500ms
@@ -36,9 +47,9 @@ export const useDossierForm = () => {
   });
 
   // Add form persistence
-  const { clearFormAndStorage } = useFormPersistence(form as any, isSubmitting, submitSuccess);
+  const { clearFormAndStorage } = useFormPersistence(form, isSubmitting, submitSuccess);
 
-  const handleSubmit = async (data: DossierFormValues) => {
+  const submitDossier: SubmitHandler<DossierFormValues> = async (data) => {
     setIsSubmitting(true);
     setSubmitError(null);
     setSubmitSuccess(false);
@@ -128,7 +139,7 @@ export const useDossierForm = () => {
     }
   };
 
-  const handleGeneratePDF = async (data: DossierFormValues) => {
+  const handleGeneratePDF: SubmitHandler<DossierFormValues> = async (data) => {
     setIsSubmitting(true);
     setSubmitError(null);
     setPdfProgress(0);
@@ -182,7 +193,7 @@ export const useDossierForm = () => {
 
   return {
     form,
-    handleSubmit,
+    submitDossier,
     handleGeneratePDF,
     isSubmitting,
     submitError,

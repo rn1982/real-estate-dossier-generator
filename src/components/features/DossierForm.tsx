@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Controller } from 'react-hook-form';
 import { FormSection } from './FormSection';
 import { Input } from '@/components/ui/Input';
@@ -20,26 +20,33 @@ import {
 } from '@/types/dossierForm';
 
 export const DossierForm: React.FC = () => {
-  const { form, handleSubmit, handleGeneratePDF, isSubmitting, clearFormAndStorage, pdfProgress } = useDossierForm();
+  const { form, submitDossier, handleGeneratePDF, isSubmitting, clearFormAndStorage, pdfProgress } = useDossierForm();
   const {
     register,
     control,
     formState: { errors },
     watch,
+    handleSubmit: formHandleSubmit,
   } = form;
+
+  const onSubmit = formHandleSubmit(submitDossier);
+
+  const handleGeneratePdfClick = useCallback(() => {
+    void formHandleSubmit(handleGeneratePDF)();
+  }, [formHandleSubmit, handleGeneratePDF]);
   
   // Watch PDF customization values for preview
-  const pdfTemplate = watch('pdfTemplate');
+  const pdfTemplate = watch('pdfTemplate') ?? 'modern';
   const pdfColors = {
-    primary: watch('pdfPrimaryColor'),
-    secondary: watch('pdfSecondaryColor'),
-    accent: watch('pdfAccentColor'),
+    primary: watch('pdfPrimaryColor') ?? undefined,
+    secondary: watch('pdfSecondaryColor') ?? undefined,
+    accent: watch('pdfAccentColor') ?? undefined,
   };
-  const pdfPhotoLayout = watch('pdfPhotoLayout');
-  const pdfPhotoColumns = watch('pdfPhotoColumns');
-  const pdfShowAgent = watch('pdfShowAgent');
-  const pdfShowSocial = watch('pdfShowSocial');
-  const pdfShowAI = watch('pdfShowAI');
+  const pdfPhotoLayout = watch('pdfPhotoLayout') ?? 'grid';
+  const pdfPhotoColumns = watch('pdfPhotoColumns') ?? 2;
+  const pdfShowAgent = watch('pdfShowAgent') ?? true;
+  const pdfShowSocial = watch('pdfShowSocial') ?? true;
+  const pdfShowAI = watch('pdfShowAI') ?? true;
   const pdfLogo = watch('pdfLogo');
   
   // Create logo URL with proper cleanup
@@ -63,7 +70,7 @@ export const DossierForm: React.FC = () => {
         Formulaire de Soumission de Propriété
       </h1>
       
-      <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-6">
+      <form onSubmit={onSubmit} className="space-y-6">
         {/* Section 1: Agent Information */}
         <FormSection
           title="1. Informations de l'Agent"
@@ -539,7 +546,7 @@ export const DossierForm: React.FC = () => {
             type="button"
             size="lg"
             disabled={isSubmitting}
-            onClick={() => form.handleSubmit(handleGeneratePDF as any)()}
+            onClick={handleGeneratePdfClick}
             className="min-w-[250px] relative bg-primary hover:bg-primary/90"
           >
             {isSubmitting ? (
