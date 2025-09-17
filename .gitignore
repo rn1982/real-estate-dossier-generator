@@ -55,3 +55,6 @@ Desktop.ini
 
 # Debug logs
 .ai/
+# BMAD (local only)
+.bmad-core/
+.bmad-*/
