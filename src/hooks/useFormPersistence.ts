@@ -10,8 +10,12 @@ interface StoredFormData<TFieldValues extends FieldValues> {
   timestamp: number;
 }
 
-export const useFormPersistence = <TFieldValues extends FieldValues>(
-  form: UseFormReturn<TFieldValues>,
+export const useFormPersistence = <
+  TFieldValues extends FieldValues,
+  TContext = any,
+  TTransformedValues = TFieldValues
+>(
+  form: UseFormReturn<TFieldValues, TContext, TTransformedValues>,
   isSubmitting: boolean,
   submitSuccess: boolean
 ) => {

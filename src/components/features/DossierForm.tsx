@@ -20,7 +20,7 @@ import {
 } from '@/types/dossierForm';
 
 export const DossierForm: React.FC = () => {
-  const { form, handleSubmit: submitDossier, handleGeneratePDF, isSubmitting, clearFormAndStorage, pdfProgress } = useDossierForm();
+  const { form, submitDossier, handleGeneratePDF, isSubmitting, clearFormAndStorage, pdfProgress } = useDossierForm();
   const {
     register,
     control,
@@ -36,17 +36,17 @@ export const DossierForm: React.FC = () => {
   }, [formHandleSubmit, handleGeneratePDF]);
   
   // Watch PDF customization values for preview
-  const pdfTemplate = watch('pdfTemplate');
+  const pdfTemplate = watch('pdfTemplate') ?? 'modern';
   const pdfColors = {
-    primary: watch('pdfPrimaryColor'),
-    secondary: watch('pdfSecondaryColor'),
-    accent: watch('pdfAccentColor'),
+    primary: watch('pdfPrimaryColor') ?? undefined,
+    secondary: watch('pdfSecondaryColor') ?? undefined,
+    accent: watch('pdfAccentColor') ?? undefined,
   };
-  const pdfPhotoLayout = watch('pdfPhotoLayout');
-  const pdfPhotoColumns = watch('pdfPhotoColumns');
-  const pdfShowAgent = watch('pdfShowAgent');
-  const pdfShowSocial = watch('pdfShowSocial');
-  const pdfShowAI = watch('pdfShowAI');
+  const pdfPhotoLayout = watch('pdfPhotoLayout') ?? 'grid';
+  const pdfPhotoColumns = watch('pdfPhotoColumns') ?? 2;
+  const pdfShowAgent = watch('pdfShowAgent') ?? true;
+  const pdfShowSocial = watch('pdfShowSocial') ?? true;
+  const pdfShowAI = watch('pdfShowAI') ?? true;
   const pdfLogo = watch('pdfLogo');
   
   // Create logo URL with proper cleanup
